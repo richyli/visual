@@ -162,7 +162,7 @@
                         
                         <div>
                             <div class="flex justify-between text-xs mb-1">
-                                <span class="text-yellow-300">檢查成本 (誤報代價)</span>
+                                <span class="text-yellow-300">檢查成本 (誤報代價 + 設備採購)</span>
                                 <span id="cost-fa" class="font-mono">0</span>
                             </div>
                             <div class="w-full bg-gray-700 rounded-full h-1.5">
@@ -228,21 +228,24 @@
         const stages = {
             'early': {
                 name: '疫情初期',
-                desc: '病毒剛爆發，醫療資源充足。此時漏報會引發嚴重社區感染，因此「社會成本極高」。政府願意花錢大規模篩檢隔離（檢查成本也高，但遠低於社會成本）。<br><br><b class="text-indigo-600">👉 策略建議：應降低門檻 (寧可錯殺)，確保漏報率極低。</b>',
+                desc: '病毒剛爆發，醫療資源充足。此時漏報會引發嚴重社區感染，因此「社會成本極高」。政府願意花錢大規模篩檢隔離（基礎檢查成本高）。<br><br>💡 注意：此階段追求高準確率 (d\' 增加) 需投入大量研發或採購高階設備（例如急需建立 PCR 量能），會使得「檢查成本」呈指數型飆升。<br><br><b class="text-indigo-600">👉 策略建議：應降低門檻 (寧可錯殺)，確保漏報率極低。若過度追求 d\' 可能導致總成本過高。</b>',
                 weightMiss: 1000, 
-                weightFA: 200     
+                baseWeightFA: 200,    // 基礎誤報成本
+                dPrimeCostFactor: 50  // d' 每增加 1，FA 成本增加的倍率或基礎值
             },
             'peak': {
                 name: '疫情高峰 (中期)',
-                desc: '社區大規模感染，醫療體系瀕臨崩潰。若將健康人誤判陽性送醫，會排擠重症資源，導致「檢查/隔離成本極高」。漏報相對影響變小。<br><br><b class="text-indigo-600">👉 策略建議：應提高門檻 (證據確鑿才收治)，保留醫療資源。</b>',
+                desc: '社區大規模感染，醫療體系瀕臨崩潰。若將健康人誤判陽性送醫，會排擠重症資源，導致「檢查/隔離成本極高」。漏報相對影響變小。<br><br>💡 提升 d\' (例如改用更準確的快篩) 雖然會增加採購成本，但能減少寶貴醫療資源被誤報佔用。<br><br><b class="text-indigo-600">👉 策略建議：應提高門檻 (證據確鑿才收治)，保留醫療資源。</b>',
                 weightMiss: 300,  
-                weightFA: 800     
+                baseWeightFA: 800,
+                dPrimeCostFactor: 20
             },
             'late': {
                 name: '疫情後期 (共存)',
-                desc: '多數人已具備抗體，病毒輕症化。社會決定與病毒共存。此時漏報造成的健康危害很小（社會成本低），且不再強制大規模隔離（檢查成本低）。<br><br><b class="text-indigo-600">👉 策略建議：維持正常門檻。提升 d\' 的邊際效益變低。</b>',
+                desc: '多數人已具備抗體，病毒輕症化。社會決定與病毒共存。此時漏報造成的健康危害很小（社會成本低），且不再強制大規模隔離（基礎檢查成本低）。<br><br>💡 此階段高準確率工具已普及且降價，提升 d\' 的成本增加較平緩，但邊際效益也很低。<br><br><b class="text-indigo-600">👉 策略建議：維持正常門檻。提升 d\' 的邊際效益變低。</b>',
                 weightMiss: 50,
-                weightFA: 50
+                baseWeightFA: 50,
+                dPrimeCostFactor: 5
             }
         };
 
@@ -318,8 +321,12 @@
             const countMiss = missRate * baseSignalPopulation;
             const countFA = faRate * baseNoisePopulation;
 
+            // 計算動態的 FA 權重：基礎權重加上受 d' 影響的採購成本
+            // d' 最低設定為 0.5，我們計算相對於 0.5 增加的部分，並呈指數上升（代表極高精度設備極度昂貴）
+            const dynamicFAWeight = currentWeights.baseWeightFA + (Math.pow((dPrime - 0.5), 2) * currentWeights.dPrimeCostFactor);
+
             const costMiss = countMiss * currentWeights.weightMiss;
-            const costFA = countFA * currentWeights.weightFA;
+            const costFA = countFA * dynamicFAWeight; // 使用動態權重
             const totalCost = costMiss + costFA;
 
             // 動態更新數字
@@ -337,14 +344,22 @@
 
             // 給予建議回饋
             let advice = "";
-            if (currentStage === 'early' && criterionZ > 0) {
-                advice = "⚠️ 警告：門檻過高！漏報成本正在飆升，請調低門檻。";
-                document.getElementById('advice-text').className = "text-[10px] text-orange-400 mt-1 italic";
+            if (currentStage === 'early') {
+                if (criterionZ > 0) {
+                    advice = "⚠️ 警告：門檻過高！漏報成本正在飆升，請調低門檻。";
+                    document.getElementById('advice-text').className = "text-[10px] text-orange-400 mt-1 italic";
+                } else if (dPrime > 3.0) {
+                     advice = "⚠️ 警告：追求過高 d' 導致設備採購成本（反映在檢查成本）大增！";
+                     document.getElementById('advice-text').className = "text-[10px] text-orange-400 mt-1 italic";
+                } else {
+                     advice = "✅ 門檻設定符合初期策略 (寧可錯殺)。";
+                     document.getElementById('advice-text').className = "text-[10px] text-green-400 mt-1 italic";
+                }
             } else if (currentStage === 'peak' && criterionZ < 0) {
                 advice = "⚠️ 警告：門檻過低！醫療資源正被誤報塞爆，請調高門檻。";
                 document.getElementById('advice-text').className = "text-[10px] text-orange-400 mt-1 italic";
             } else {
-                advice = "✅ 門檻設定符合階段策略。可嘗試提升 d' 降低損失。";
+                advice = "✅ 門檻設定符合階段策略。";
                 document.getElementById('advice-text').className = "text-[10px] text-green-400 mt-1 italic";
             }
             document.getElementById('advice-text').innerText = advice;
