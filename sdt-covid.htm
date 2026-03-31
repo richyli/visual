@@ -6,8 +6,11 @@
     <title>COVID-19 防疫決策中心模擬器 (SDT)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 隱藏預設的捲軸，讓畫面更像應用程式 */
-        body { overflow-x: hidden; }
+        /* 隱藏預設的捲軸，限制主體高度 */
+        body { 
+            overflow: hidden; 
+            height: 100vh;
+        }
         
         /* 自訂滑桿樣式 */
         input[type=range] {
@@ -17,26 +20,26 @@
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
+            height: 16px;
+            width: 16px;
             border-radius: 50%;
             background: #4F46E5;
             cursor: pointer;
-            margin-top: -8px;
+            margin-top: -6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
             cursor: pointer;
-            background: #E5E7EB;
+            background: #D1D5DB;
             border-radius: 2px;
         }
         
         /* 圖表區的畫布 */
         canvas {
             width: 100%;
-            height: 250px;
+            height: 100%;
             background-color: #F9FAFB;
             border-radius: 0.5rem;
             cursor: crosshair;
@@ -48,151 +51,163 @@
             color: white;
             border-color: #4F46E5;
         }
+        
+        /* 客製化滾動條給可能過長的說明文字 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans p-4 md:p-8">
+<body class="bg-gray-100 text-gray-800 font-sans p-2 md:p-4 flex items-center justify-center">
 
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+    <!-- 主體容器：限制最大高度與寬度，使用 flex 排版 -->
+    <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl flex flex-col h-full max-h-[96vh]">
         
-        <!-- 標題區 -->
-        <div class="bg-indigo-600 text-white p-6">
-            <h1 class="text-2xl font-bold">COVID-19 防疫指揮中心：決策模擬器</h1>
-            <p class="text-indigo-100 mt-2 text-sm">基於信號偵測理論 (SDT)，體驗在不同疫情階段中，如何平衡「檢測敏感度 ($d'$)」與「判斷標準 ($\\beta$)」，以最小化整體社會成本。</p>
+        <!-- 標題區 (縮減高度) -->
+        <div class="bg-indigo-600 text-white p-3 md:p-4 shrink-0 rounded-t-xl">
+            <h1 class="text-xl font-bold">COVID-19 防疫指揮中心：決策模擬器</h1>
+            <p class="text-indigo-100 mt-1 text-xs">基於信號偵測理論 (SDT)，平衡「檢測敏感度 (d')」與「判斷標準 (β)」，最小化總體社會成本。</p>
         </div>
 
-        <div class="p-6">
+        <!-- 主要內容區：三欄式佈局 -->
+        <div class="flex flex-row gap-4 p-4 flex-1 min-h-0">
             
-            <!-- 疫情階段選擇 -->
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold mb-3">1. 選擇疫情階段 (設定成本權重)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button id="stage-early" class="stage-btn active border-2 border-gray-200 rounded-lg p-3 text-center transition-colors duration-200 hover:bg-gray-50" onclick="setStage('early')">
-                        <div class="font-bold">疫情初期</div>
-                        <div class="text-xs mt-1 text-gray-500">社會成本極高 / 檢查成本高</div>
-                    </button>
-                    <button id="stage-peak" class="stage-btn border-2 border-gray-200 rounded-lg p-3 text-center transition-colors duration-200 hover:bg-gray-50" onclick="setStage('peak')">
-                        <div class="font-bold">疫情高峰 (中期)</div>
-                        <div class="text-xs mt-1 text-gray-500">社會成本高 / 檢查成本極高</div>
-                    </button>
-                    <button id="stage-late" class="stage-btn border-2 border-gray-200 rounded-lg p-3 text-center transition-colors duration-200 hover:bg-gray-50" onclick="setStage('late')">
-                        <div class="font-bold">疫情後期 (共存)</div>
-                        <div class="text-xs mt-1 text-gray-500">社會成本低 / 檢查成本低</div>
-                    </button>
-                </div>
-                <div id="cost-description" class="mt-3 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <!-- 動態更新的說明文字 -->
-                </div>
-            </div>
-
-            <!-- 圖表與控制區 -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- 左側欄位：圖表與控制滑桿 (佔 5/12) -->
+            <div class="w-5/12 flex flex-col gap-3 h-full">
+                <h2 class="text-md font-semibold shrink-0">1. 檢驗數據分佈圖</h2>
                 
-                <!-- 左側：圖表與滑桿 -->
-                <div class="lg:col-span-2 space-y-6">
-                    <div>
-                        <h2 class="text-lg font-semibold mb-2">2. 檢驗數據分佈圖</h2>
-                        <div class="relative">
-                            <canvas id="sdtCanvas"></canvas>
-                            <!-- 圖例 -->
-                            <div class="absolute top-2 right-2 flex flex-col gap-1 text-xs bg-white/80 p-2 rounded shadow-sm border border-gray-200">
-                                <div class="flex items-center"><span class="w-3 h-3 bg-green-200 border border-green-500 rounded mr-2 inline-block"></span>健康人群 (噪音)</div>
-                                <div class="flex items-center"><span class="w-3 h-3 bg-red-200 border border-red-500 rounded mr-2 inline-block"></span>確診病患 (信號)</div>
-                                <div class="flex items-center"><span class="w-4 h-0 border-t-2 border-dashed border-gray-800 mr-1 inline-block"></span>陽性判定門檻 ($\beta$)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <!-- 滑桿：檢測工具準確度 (d') -->
-                        <div>
-                            <div class="flex justify-between items-end mb-2">
-                                <label class="font-medium text-gray-700">
-                                    檢測工具準確度 ($d'$) 
-                                    <span class="block text-xs text-gray-500 font-normal">拉開兩者分佈。左：便宜快篩 / 右：昂貴PCR</span>
-                                </label>
-                                <span id="dprime-val" class="font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded text-sm">2.0</span>
-                            </div>
-                            <input type="range" id="dprime-slider" min="0.5" max="4.0" step="0.1" value="2.0" oninput="updateSimulation()">
-                        </div>
-
-                        <!-- 滑桿：陽性判定標準 (Beta) -->
-                        <div>
-                            <div class="flex justify-between items-end mb-2">
-                                <label class="font-medium text-gray-700">
-                                    陽性判定門檻 (Criterion $\beta$)
-                                    <span class="block text-xs text-gray-500 font-normal">圖表上的垂直線。左：寧可錯殺 / 右：證據確鑿</span>
-                                </label>
-                                <span id="criterion-val" class="font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded text-sm">0.0</span>
-                            </div>
-                            <input type="range" id="criterion-slider" min="-3" max="3" step="0.1" value="0.0" oninput="updateSimulation()">
-                        </div>
+                <!-- 圖表區 (自適應剩餘高度) -->
+                <div class="flex-1 relative border border-gray-200 rounded-lg overflow-hidden min-h-[150px]">
+                    <canvas id="sdtCanvas"></canvas>
+                    <!-- 圖例 -->
+                    <div class="absolute top-2 right-2 flex flex-col gap-1 text-[10px] bg-white/90 p-1.5 rounded shadow-sm border border-gray-200">
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 bg-green-200 border border-green-500 rounded mr-1.5 inline-block"></span>健康 (噪音)</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 bg-red-200 border border-red-500 rounded mr-1.5 inline-block"></span>確診 (信號)</div>
+                        <div class="flex items-center"><span class="w-3 h-0 border-t-2 border-dashed border-gray-800 mr-1 inline-block"></span>門檻 (β)</div>
                     </div>
                 </div>
 
-                <!-- 右側：結果與成本計算 -->
-                <div class="space-y-4">
-                    <h2 class="text-lg font-semibold border-b pb-2">3. 決策結果與成本</h2>
-                    
-                    <!-- 混淆矩陣摘要 -->
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div class="bg-red-50 p-3 rounded border border-red-100">
-                            <div class="text-red-800 font-semibold mb-1">命中 (Hit)</div>
-                            <div class="text-xs text-gray-600 mb-1">成功隔離確診者</div>
-                            <div id="hit-rate" class="text-xl font-bold text-red-600">--%</div>
+                <!-- 滑桿控制區 -->
+                <div class="shrink-0 space-y-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="font-medium text-sm text-gray-700">
+                                工具準確度 (d') 
+                                <span class="block text-[10px] text-gray-500 font-normal">左：便宜快篩 / 右：昂貴PCR</span>
+                            </label>
+                            <span id="dprime-val" class="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-xs">2.0</span>
                         </div>
-                        <div class="bg-orange-50 p-3 rounded border border-orange-100">
-                            <div class="text-orange-800 font-semibold mb-1">漏報 (Miss)</div>
-                            <div class="text-xs text-gray-600 mb-1">確診者在社區流竄</div>
-                            <div id="miss-rate" class="text-xl font-bold text-orange-600">--%</div>
-                        </div>
-                        <div class="bg-yellow-50 p-3 rounded border border-yellow-100">
-                            <div class="text-yellow-800 font-semibold mb-1">誤報 (False Alarm)</div>
-                            <div class="text-xs text-gray-600 mb-1">健康者被強制隔離</div>
-                            <div id="fa-rate" class="text-xl font-bold text-yellow-600">--%</div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded border border-green-100">
-                            <div class="text-green-800 font-semibold mb-1">正確拒絕 (CR)</div>
-                            <div class="text-xs text-gray-600 mb-1">健康者正常生活</div>
-                            <div id="cr-rate" class="text-xl font-bold text-green-600">--%</div>
-                        </div>
+                        <input type="range" id="dprime-slider" min="0.5" max="4.0" step="0.1" value="2.0" oninput="updateSimulation()">
                     </div>
 
-                    <!-- 成本儀表板 -->
-                    <div class="bg-gray-800 text-white p-4 rounded-xl mt-4 shadow-inner">
-                        <h3 class="font-semibold text-gray-300 mb-3 text-sm tracking-wider uppercase">總體代價估算</h3>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-orange-300">社會成本 (漏報代價)</span>
-                                    <span id="cost-miss" class="font-mono">0</span>
-                                </div>
-                                <div class="w-full bg-gray-700 rounded-full h-1.5">
-                                    <div id="bar-miss" class="bg-orange-400 h-1.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-yellow-300">檢查成本 (誤報代價)</span>
-                                    <span id="cost-fa" class="font-mono">0</span>
-                                </div>
-                                <div class="w-full bg-gray-700 rounded-full h-1.5">
-                                    <div id="bar-fa" class="bg-yellow-400 h-1.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                            </div>
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="font-medium text-sm text-gray-700">
+                                陽性判定門檻 (β)
+                                <span class="block text-[10px] text-gray-500 font-normal">左：寧可錯殺 / 右：證據確鑿</span>
+                            </label>
+                            <span id="criterion-val" class="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-xs">0.0</span>
+                        </div>
+                        <input type="range" id="criterion-slider" min="-3" max="3" step="0.1" value="0.0" oninput="updateSimulation()">
+                    </div>
+                </div>
+            </div>
 
-                            <div class="pt-3 border-t border-gray-600 mt-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-bold text-gray-200">總損失分數</span>
-                                    <span id="cost-total" class="text-3xl font-bold text-white font-mono drop-shadow-md">0</span>
-                                </div>
-                                <p id="advice-text" class="text-xs text-gray-400 mt-2 italic">請調整門檻以尋找最低總損失...</p>
+            <!-- 中間欄位：決策結果與成本 (佔 4/12) -->
+            <div class="w-4/12 flex flex-col gap-3 h-full">
+                <h2 class="text-md font-semibold shrink-0">2. 決策結果與成本</h2>
+                
+                <!-- 混淆矩陣摘要 2x2 -->
+                <div class="grid grid-cols-2 gap-2 shrink-0">
+                    <div class="bg-red-50 p-2 rounded border border-red-100">
+                        <div class="text-red-800 font-semibold text-xs mb-0.5">命中 (Hit)</div>
+                        <div class="text-[10px] text-gray-600 leading-tight mb-1">成功隔離確診者</div>
+                        <div id="hit-rate" class="text-lg font-bold text-red-600">--%</div>
+                    </div>
+                    <div class="bg-orange-50 p-2 rounded border border-orange-100">
+                        <div class="text-orange-800 font-semibold text-xs mb-0.5">漏報 (Miss)</div>
+                        <div class="text-[10px] text-gray-600 leading-tight mb-1">確診者社區流竄</div>
+                        <div id="miss-rate" class="text-lg font-bold text-orange-600">--%</div>
+                    </div>
+                    <div class="bg-yellow-50 p-2 rounded border border-yellow-100">
+                        <div class="text-yellow-800 font-semibold text-xs mb-0.5">誤報 (False Alarm)</div>
+                        <div class="text-[10px] text-gray-600 leading-tight mb-1">健康者強制隔離</div>
+                        <div id="fa-rate" class="text-lg font-bold text-yellow-600">--%</div>
+                    </div>
+                    <div class="bg-green-50 p-2 rounded border border-green-100">
+                        <div class="text-green-800 font-semibold text-xs mb-0.5">正確拒絕 (CR)</div>
+                        <div class="text-[10px] text-gray-600 leading-tight mb-1">健康者正常生活</div>
+                        <div id="cr-rate" class="text-lg font-bold text-green-600">--%</div>
+                    </div>
+                </div>
+
+                <!-- 成本儀表板 -->
+                <div class="bg-gray-800 text-white p-3 rounded-xl shadow-inner flex-1 flex flex-col justify-center">
+                    <h3 class="font-semibold text-gray-300 mb-2 text-xs tracking-wider uppercase shrink-0">總體代價估算</h3>
+                    
+                    <div class="space-y-3 shrink-0">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-orange-300">社會成本 (漏報代價)</span>
+                                <span id="cost-miss" class="font-mono">0</span>
                             </div>
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                <div id="bar-miss" class="bg-orange-400 h-1.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-yellow-300">檢查成本 (誤報代價)</span>
+                                <span id="cost-fa" class="font-mono">0</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                <div id="bar-fa" class="bg-yellow-400 h-1.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-gray-600 mt-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-gray-200 text-sm">總損失分數</span>
+                                <span id="cost-total" class="text-2xl font-bold text-white font-mono drop-shadow-md">0</span>
+                            </div>
+                            <p id="advice-text" class="text-[10px] text-gray-400 mt-1 italic">請調整門檻以尋找最低總損失...</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- 右側欄位：疫情階段選單 (垂直佈局，佔 3/12) -->
+            <div class="w-3/12 flex flex-col gap-2 h-full border-l pl-4">
+                <h2 class="text-md font-semibold shrink-0 mb-1">3. 選擇疫情階段</h2>
+                
+                <div class="flex flex-col gap-2 shrink-0">
+                    <button id="stage-early" class="stage-btn active border-2 border-gray-200 rounded-lg py-2 px-3 text-left transition-colors duration-200 hover:bg-gray-50 flex flex-col" onclick="setStage('early')">
+                        <span class="font-bold text-sm">疫情初期</span>
+                        <span class="text-[10px] mt-0.5 text-gray-500 leading-tight">社會成本極高<br>檢查成本高</span>
+                    </button>
+                    <button id="stage-peak" class="stage-btn border-2 border-gray-200 rounded-lg py-2 px-3 text-left transition-colors duration-200 hover:bg-gray-50 flex flex-col" onclick="setStage('peak')">
+                        <span class="font-bold text-sm">疫情高峰 (中期)</span>
+                        <span class="text-[10px] mt-0.5 text-gray-500 leading-tight">社會成本高<br>檢查成本極高</span>
+                    </button>
+                    <button id="stage-late" class="stage-btn border-2 border-gray-200 rounded-lg py-2 px-3 text-left transition-colors duration-200 hover:bg-gray-50 flex flex-col" onclick="setStage('late')">
+                        <span class="font-bold text-sm">疫情後期 (共存)</span>
+                        <span class="text-[10px] mt-0.5 text-gray-500 leading-tight">社會成本低<br>檢查成本低</span>
+                    </button>
+                </div>
+                
+                <!-- 動態說明文字區 -->
+                <div class="mt-2 flex-1 overflow-y-auto custom-scrollbar bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div id="cost-description" class="text-xs text-gray-700 leading-relaxed">
+                        <!-- 動態更新的說明文字 -->
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -200,26 +215,32 @@
         // --- 狀態與設定 ---
         const canvas = document.getElementById('sdtCanvas');
         const ctx = canvas.getContext('2d');
-        let width = canvas.width = canvas.offsetWidth;
-        let height = canvas.height = canvas.offsetHeight;
+        let width, height;
+
+        function resizeCanvas() {
+            // 透過父元素的實際大小動態決定畫布的解析度
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+            updateSimulation();
+        }
 
         // 疫情階段參數定義
         const stages = {
             'early': {
                 name: '疫情初期',
-                desc: '病毒剛爆發，沒有疫苗，醫療資源充足。此時漏掉一個病患會引發嚴重的社區感染，因此「社會成本極高」。為了防堵，政府願意花錢大規模篩檢並隔離疑似病例（檢查成本也高，但遠低於社會成本）。<br><b>👉 策略建議：應降低門檻 (寧可錯殺)，即使誤報率增加，也要確保漏報率極低。</b>',
-                weightMiss: 1000, // 漏報的權重 (社會成本)
-                weightFA: 200     // 誤報的權重 (檢查/隔離成本)
+                desc: '病毒剛爆發，醫療資源充足。此時漏報會引發嚴重社區感染，因此「社會成本極高」。政府願意花錢大規模篩檢隔離（檢查成本也高，但遠低於社會成本）。<br><br><b class="text-indigo-600">👉 策略建議：應降低門檻 (寧可錯殺)，確保漏報率極低。</b>',
+                weightMiss: 1000, 
+                weightFA: 200     
             },
             'peak': {
                 name: '疫情高峰 (中期)',
-                desc: '社區已經大規模感染，醫療體系瀕臨崩潰。此時如果把健康的人（或輕症）誤判為陽性並送入醫院，會排擠重症資源，導致「檢查/隔離成本極高」。漏報雖然也會造成傳染，但在廣泛感染下，相對影響變小。<br><b>👉 策略建議：應提高門檻 (證據確鑿才收治)，把寶貴的醫療資源留給真正的重症患者。</b>',
+                desc: '社區大規模感染，醫療體系瀕臨崩潰。若將健康人誤判陽性送醫，會排擠重症資源，導致「檢查/隔離成本極高」。漏報相對影響變小。<br><br><b class="text-indigo-600">👉 策略建議：應提高門檻 (證據確鑿才收治)，保留醫療資源。</b>',
                 weightMiss: 300,  
                 weightFA: 800     
             },
             'late': {
                 name: '疫情後期 (共存)',
-                desc: '多數人已接種疫苗或感染過，病毒輕症化。社會決定與病毒共存。此時漏報造成的健康危害很小（社會成本低），而且也不再強制大規模隔離或昂貴的 PCR 檢測（檢查成本低）。<br><b>👉 策略建議：維持正常的門檻，無需過度反應。提升檢測工具準確度 ($d\'$) 的邊際效益也變低了。</b>',
+                desc: '多數人已具備抗體，病毒輕症化。社會決定與病毒共存。此時漏報造成的健康危害很小（社會成本低），且不再強制大規模隔離（檢查成本低）。<br><br><b class="text-indigo-600">👉 策略建議：維持正常門檻。提升 d\' 的邊際效益變低。</b>',
                 weightMiss: 50,
                 weightFA: 50
             }
@@ -262,6 +283,8 @@
 
         // 主要繪製與計算函數
         function updateSimulation() {
+            if (!width || !height) return;
+
             const dPrime = parseFloat(document.getElementById('dprime-slider').value);
             const criterionZ = parseFloat(document.getElementById('criterion-slider').value);
             
@@ -270,19 +293,15 @@
             document.getElementById('criterion-val').innerText = criterionZ.toFixed(1);
 
             // 參數設定
-            const stdDev = 1.5; // 標準差固定
-            const meanNoise = - (dPrime * stdDev) / 2; // 將 Noise 分佈向左移
-            const meanSignal = (dPrime * stdDev) / 2;  // 將 Signal 分佈向右移
-            const criterionX = criterionZ * stdDev;    // 將 Z 分數轉換為 X 座標
+            const stdDev = 1.5; 
+            const meanNoise = - (dPrime * stdDev) / 2; 
+            const meanSignal = (dPrime * stdDev) / 2;  
+            const criterionX = criterionZ * stdDev;    
 
             // --- 1. 計算機率 (面積) ---
-            // Hit Rate: Signal 分佈在 Criterion 右側的面積
             const hitRate = 1 - normalCDF(criterionX, meanSignal, stdDev);
-            // Miss Rate: Signal 分佈在 Criterion 左側的面積
             const missRate = 1 - hitRate;
-            // False Alarm Rate: Noise 分佈在 Criterion 右側的面積
             const faRate = 1 - normalCDF(criterionX, meanNoise, stdDev);
-            // Correct Rejection Rate: Noise 分佈在 Criterion 左側的面積
             const crRate = 1 - faRate;
 
             // 更新 UI 數據
@@ -293,7 +312,6 @@
 
             // --- 2. 計算成本 ---
             const currentWeights = stages[currentStage];
-            // 假設基礎人口為 10000，盛行率 10% (1000人確診, 9000人健康)
             const baseSignalPopulation = 1000;
             const baseNoisePopulation = 9000;
             
@@ -304,7 +322,7 @@
             const costFA = countFA * currentWeights.weightFA;
             const totalCost = costMiss + costFA;
 
-            // 動態更新數字 (簡化顯示，除以1000)
+            // 動態更新數字
             const displayCostMiss = Math.round(costMiss / 1000);
             const displayCostFA = Math.round(costFA / 1000);
             const displayTotal = Math.round(totalCost / 1000);
@@ -313,110 +331,98 @@
             document.getElementById('cost-fa').innerText = displayCostFA.toLocaleString();
             document.getElementById('cost-total').innerText = displayTotal.toLocaleString();
 
-            // 更新進度條視覺比例 (以一個合理的上限值作為分母)
-            const maxBarValue = 5000; // 調整此數值以改變條的長度敏感度
+            const maxBarValue = 5000; 
             document.getElementById('bar-miss').style.width = Math.min((displayCostMiss / maxBarValue) * 100, 100) + '%';
             document.getElementById('bar-fa').style.width = Math.min((displayCostFA / maxBarValue) * 100, 100) + '%';
 
             // 給予建議回饋
             let advice = "";
             if (currentStage === 'early' && criterionZ > 0) {
-                advice = "⚠️ 警告：疫情初期門檻過高！漏報的社會成本正在飆升。建議調低門檻。";
-                document.getElementById('advice-text').classList.add('text-orange-400');
+                advice = "⚠️ 警告：門檻過高！漏報成本正在飆升，請調低門檻。";
+                document.getElementById('advice-text').className = "text-[10px] text-orange-400 mt-1 italic";
             } else if (currentStage === 'peak' && criterionZ < 0) {
-                advice = "⚠️ 警告：疫情高峰門檻過低！醫療資源正被誤報塞爆。建議調高門檻。";
-                document.getElementById('advice-text').classList.add('text-orange-400');
+                advice = "⚠️ 警告：門檻過低！醫療資源正被誤報塞爆，請調高門檻。";
+                document.getElementById('advice-text').className = "text-[10px] text-orange-400 mt-1 italic";
             } else {
-                advice = "✅ 目前門檻設定符合階段策略。可以嘗試提升 d' 來進一步降低總損失。";
-                document.getElementById('advice-text').classList.remove('text-orange-400');
-                document.getElementById('advice-text').classList.add('text-green-400');
+                advice = "✅ 門檻設定符合階段策略。可嘗試提升 d' 降低損失。";
+                document.getElementById('advice-text').className = "text-[10px] text-green-400 mt-1 italic";
             }
             document.getElementById('advice-text').innerText = advice;
-
 
             // --- 3. 繪製圖表 ---
             ctx.clearRect(0, 0, width, height);
             
-            const padding = 40;
-            const graphWidth = width - padding * 2;
-            const graphHeight = height - padding * 2;
+            const paddingX = 20;
+            const paddingY = 20;
+            const graphWidth = width - paddingX * 2;
+            const graphHeight = height - paddingY * 2;
             
-            // X 軸映射範圍 (固定從 -6 到 +6)
             const xMin = -6;
             const xMax = 6;
             
             function mapX(x) {
-                return padding + ((x - xMin) / (xMax - xMin)) * graphWidth;
+                return paddingX + ((x - xMin) / (xMax - xMin)) * graphWidth;
             }
-            
             function mapY(y) {
-                // PDF 最大值約為 0.26 (當 stdDev=1.5)，我們將 Y 軸上限設為 0.3
-                return height - padding - (y / 0.3) * graphHeight;
+                return height - paddingY - (y / 0.3) * graphHeight;
             }
 
-            // 畫基準線 (X軸)
+            // 基準線
             ctx.beginPath();
-            ctx.moveTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
+            ctx.moveTo(paddingX, height - paddingY);
+            ctx.lineTo(width - paddingX, height - paddingY);
             ctx.strokeStyle = '#9CA3AF';
             ctx.lineWidth = 1;
             ctx.stroke();
 
-            // 繪製分佈曲線
-            const step = (xMax - xMin) / 200;
+            const step = (xMax - xMin) / 100;
             
-            // 繪製 Noise 曲線 (健康人群)
+            // Noise (健康)
             ctx.beginPath();
             ctx.moveTo(mapX(xMin), mapY(0));
             for (let x = xMin; x <= xMax; x += step) {
                 ctx.lineTo(mapX(x), mapY(normalPDF(x, meanNoise, stdDev)));
             }
             ctx.lineTo(mapX(xMax), mapY(0));
-            ctx.fillStyle = 'rgba(167, 243, 208, 0.5)'; // green-200 with opacity
+            ctx.fillStyle = 'rgba(167, 243, 208, 0.5)';
             ctx.fill();
-            ctx.strokeStyle = '#10B981'; // green-500
+            ctx.strokeStyle = '#10B981';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // 繪製 Signal 曲線 (確診病患)
+            // Signal (確診)
             ctx.beginPath();
             ctx.moveTo(mapX(xMin), mapY(0));
             for (let x = xMin; x <= xMax; x += step) {
                 ctx.lineTo(mapX(x), mapY(normalPDF(x, meanSignal, stdDev)));
             }
             ctx.lineTo(mapX(xMax), mapY(0));
-            ctx.fillStyle = 'rgba(254, 202, 202, 0.5)'; // red-200 with opacity
+            ctx.fillStyle = 'rgba(254, 202, 202, 0.5)';
             ctx.fill();
-            ctx.strokeStyle = '#EF4444'; // red-500
+            ctx.strokeStyle = '#EF4444';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // 繪製 Criterion (判斷標準) 垂直線
+            // Criterion
             const cx = mapX(criterionX);
             ctx.beginPath();
-            ctx.moveTo(cx, padding / 2);
-            ctx.lineTo(cx, height - padding / 2);
-            ctx.strokeStyle = '#1F2937'; // gray-800
+            ctx.moveTo(cx, paddingY / 2);
+            ctx.lineTo(cx, height - paddingY / 2);
+            ctx.strokeStyle = '#1F2937';
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.stroke();
-            ctx.setLineDash([]); // 重置
-
-            // 繪製面積填色 (可選，這裡用簡單標示代替，以免畫面太亂)
-            // 可以在這裡加入特定區域的陰影來表示 Hit, FA 等...
-
+            ctx.setLineDash([]);
         }
 
-        // 處理視窗縮放
-        window.addEventListener('resize', () => {
-            width = canvas.width = canvas.offsetWidth;
-            height = canvas.height = canvas.offsetHeight;
-            updateSimulation();
-        });
+        // 監聽視窗縮放以重繪 Canvas
+        window.addEventListener('resize', resizeCanvas);
 
-        // 初始化
-        setStage('early');
-
+        // 初始載入
+        setTimeout(() => {
+            resizeCanvas();
+            setStage('early');
+        }, 50); // 延遲確保 DOM 尺寸已計算
     </script>
 </body>
 </html>
