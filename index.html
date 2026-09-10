@@ -46,6 +46,10 @@ h1{margin:0;font-size:clamp(25px,3.6vw,34px);line-height:1.15;letter-spacing:-.0
 .idbox input{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;
   font-family:var(--f);background:var(--soft);color:var(--ink);min-width:150px}
 .idbox input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.demolink{display:inline-flex;align-items:center;background:var(--accent);color:#fff;
+  border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:600;text-decoration:none;
+  white-space:nowrap}
+.demolink:hover{background:#0f2530}
 
 /* ---------- howto ---------- */
 .howto{margin:18px 20px 0;background:var(--soft);border:1px solid var(--line2);border-radius:12px;
@@ -378,6 +382,7 @@ footer{padding:16px 20px 20px;font-family:var(--fm);font-size:11px;color:var(--m
       <div class="idbox">
         <input id="dbName" placeholder="要評估的 Dashboard 名稱">
         <input id="dbTeam" placeholder="小組名稱">
+        <a class="demolink" href="demo.html">看完整示範儀表板 →</a>
       </div>
     </div>
 
@@ -393,6 +398,9 @@ footer{padding:16px 20px 20px;font-family:var(--fm);font-size:11px;color:var(--m
 
     <div class="case">
       <h3>所有範例共用的案例：日青茶飲區域營運儀表板</h3>
+      <p><a href="demo.html"><b>先看一份照這 44 項做出來的完整示範儀表板 →</b></a>
+      那份用的是另一個題材（食安召回通知），刻意換題材，是為了示範同一套 44 項搬得動。
+      示範頁按頂端「顯示診斷標記」，每一塊會標出它在解決哪一項。</p>
       <p>虛構品牌，數字自洽，與任何真實店家無關。刻意選一個沒有專業門檻的題材——
       每個人都買過飲料，所以可以把注意力全部放在「這個設計哪裡有問題」，
       而不是先花時間理解業務。換題材時，把這一段的設定換掉即可，十層的結構不必動。</p>
@@ -447,6 +455,8 @@ footer{padding:16px 20px 20px;font-family:var(--fm);font-size:11px;color:var(--m
         差別是每一層與每一項都補上畫得出來的好例／壞例並排小樣，案例統一為日青茶飲。</li>
         <li>v1 原版（純文字敘述的好例／壞例）保留在
         <a href="v1.html">v1.html</a>。</li>
+        <li>完整示範儀表板：<a href="demo.html">demo.html</a>——照這 44 項做出來的可互動範例，
+        題材是食安召回通知，假資料，可切換診斷標記逐塊對照。</li>
       </ul>
     </div>
 

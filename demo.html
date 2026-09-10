@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>食安召回查詢 · 教學示範儀表板（虛構資料）</title>
+<meta name="description" content="依 Dashboard 診斷框架十層 44 項設計的完整互動示範。教學用途，品牌、事件、檢驗數據全為虛構，非官方平台。">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  /* 語意色恰好五個，其餘一律灰階。紅色只給 Level 1，全站不做第二用途。 */
+  --l1:#d92d20;  --l1-bg:#fdecea;  --l1-line:#f3bdb7;
+  --l2:#c2410c;  --l2-bg:#fff3e9;  --l2-line:#f7cba6;
+  --l3:#a16207;  --l3-bg:#fff9e6;  --l3-line:#efdca6;
+  --ok:#15803d;  --ok-bg:#eef7f1;  --ok-line:#c3e2ce;
+  --ink:#16303c;
+
+  --bg:#eff2f4; --paper:#fff; --soft:#f6f8f9; --soft2:#eaeef0;
+  --tx:#132a35; --tx2:#41545f; --mut:#74858e; --line:#dbe2e6; --line2:#eaeff2;
+  --f:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --fm:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--f);font-size:14px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--fm);font-variant-numeric:tabular-nums}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ===== 示範聲明：不能被誤認成真的平台 ===== */
+.fake{background:#3b2f14;color:#ffe9a8;font-size:11.5px;font-family:var(--fm);
+  padding:5px 16px;text-align:center;letter-spacing:.02em}
+.fake b{color:#fff}
+
+/* ===== 頂列：貼齊螢幕上緣，W→∞（L10-2） ===== */
+.topbar{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;
+  display:flex;align-items:center;gap:14px;padding:0 16px;height:46px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:15px;letter-spacing:.02em;white-space:nowrap}
+.brand span{font-weight:400;opacity:.62;font-size:12px;margin-left:7px}
+.tb-f{display:flex;gap:6px;margin-left:6px;flex-wrap:wrap}
+.tb-f select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;
+  border-radius:6px;padding:4px 8px;font-size:12.5px;font-family:inherit}
+.tb-f select:focus{outline:2px solid #fff;outline-offset:1px}
+.tb-r{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:11.5px;
+  font-family:var(--fm);opacity:.85;flex-wrap:wrap}
+.tb-r b{opacity:1;font-weight:500}
+.diagbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.24);color:#fff;
+  border-radius:6px;padding:4px 10px;font-size:12px}
+.diagbtn[aria-pressed=true]{background:#fff;color:var(--ink);font-weight:700}
+
+.wrap{max-width:1220px;margin:0 auto;padding:16px 16px 70px}
+
+/* ===== 狀態列：篩選條件常駐（L4-4） ===== */
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.crumb{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut);flex-wrap:wrap}
+.crumb button{background:none;border:none;color:var(--tx2);font-size:12.5px;padding:0;
+  text-decoration:underline;text-underline-offset:2px}
+.crumb b{color:var(--tx)}
+.state-r{margin-left:auto;display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:11.5px;background:var(--soft2);border:1px solid var(--line);border-radius:99px;
+  padding:2px 10px;color:var(--tx2);font-family:var(--fm)}
+
+/* ===== 卡片 ===== */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px}
+.card-h{display:flex;align-items:baseline;gap:10px;padding:13px 16px 0;flex-wrap:wrap}
+.card-h h3{font-size:14.5px}
+.card-h .sub{font-size:11.5px;color:var(--mut);font-family:var(--fm)}
+.card-h .rt{margin-left:auto;font-size:11.5px;color:var(--mut)}
+.card-b{padding:12px 16px 16px}
+
+/* ===== 杯腳：今天最重要的一件事（L10-4） ===== */
+.stem{border:1px solid var(--l1-line);border-left:5px solid var(--l1);border-radius:var(--r);
+  background:var(--l1-bg);margin-bottom:14px;overflow:hidden}
+.stem-h{display:flex;align-items:center;gap:9px;padding:11px 16px 0;flex-wrap:wrap}
+.stem-h .dot{width:9px;height:9px;border-radius:99px;background:var(--l1);
+  animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,45,32,.5)}50%{box-shadow:0 0 0 7px rgba(217,45,32,0)}}
+.stem-h .tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;color:var(--l1);
+  text-transform:uppercase}
+.stem-b{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:6px 16px 16px}
+.stem-say{display:flex;gap:13px;align-items:flex-start;margin-bottom:11px}
+.thumb{width:56px;height:56px;border-radius:12px;background:#fff;border:1px solid var(--l1-line);
+  display:grid;place-items:center;font-size:28px;position:relative;flex-shrink:0}
+.thumb b{position:absolute;right:-4px;bottom:-4px;width:21px;height:21px;border-radius:99px;
+  background:var(--l1);color:#fff;font-size:12px;display:grid;place-items:center}
+.stem-say h2{font-size:19px;line-height:1.4;color:#8f2018}
+.stem-say .who{font-size:12.5px;color:var(--tx2);margin-bottom:3px;font-weight:600}
+.stem-say .cue{font-size:12.5px;color:var(--l2);margin-top:4px}
+.stem-nums{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.numbox{background:#fff;border:1px solid var(--l1-line);border-radius:8px;padding:7px 11px;min-width:108px}
+.numbox .l{font-size:10px;color:var(--mut);font-family:var(--fm)}
+.numbox .v{font-size:17px;font-weight:700;line-height:1.25}
+.numbox .v.red{color:var(--l1)}
+.numbox .s{font-size:10.5px;color:var(--mut)}
+.cost{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--tx2);
+  background:#fff;border:1px dashed var(--l1-line);border-radius:8px;padding:8px 11px}
+.cost b{color:var(--l1)}
+.src{font-size:11px;color:var(--mut);font-family:var(--fm);margin-top:9px}
+.stem-act{display:flex;flex-direction:column;gap:8px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--tx);border-radius:8px;
+  padding:9px 13px;font-size:13px;text-align:center}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--l1);border-color:var(--l1);color:#fff;font-weight:700;
+  min-height:44px;font-size:14.5px}
+.btn.primary:hover{background:#b91c1c}
+.btn.sm{padding:5px 10px;font-size:12px}
+.trust{background:#fff;border:1px solid var(--l1-line);border-radius:8px;padding:9px 11px;
+  font-size:11.5px;color:var(--tx2)}
+.trust b{color:var(--ok)}
+
+/* ===== 分級警示（L3-5） ===== */
+.al{display:flex;align-items:center;gap:10px;border-radius:8px;padding:9px 13px;margin-bottom:7px;
+  font-size:13px;border:1px solid transparent;flex-wrap:wrap}
+.al .lv{font-family:var(--fm);font-size:10px;letter-spacing:.08em;padding:1px 6px;border-radius:3px;
+  white-space:nowrap}
+.al .tx{flex:1;min-width:200px}
+.al.l2{background:var(--l2-bg);border-color:var(--l2-line);color:#7c2d12}
+.al.l2 .lv{background:var(--l2);color:#fff}
+.al.l3{background:var(--soft);border-color:var(--line2);color:var(--tx2);font-size:12.5px;padding:6px 13px}
+.al.l3 .lv{background:var(--l3-bg);color:var(--l3);border:1px solid var(--l3-line)}
+.al .why{font-size:11.5px;color:var(--mut)}
+
+/* ===== KPI（每張恰好四個組塊 L4-1） ===== */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi .l{font-size:11px;color:var(--mut);font-family:var(--fm);letter-spacing:.04em}
+.kpi .v{font-size:27px;font-weight:800;line-height:1.15;margin-top:1px}
+.kpi .base{font-size:11px;color:var(--mut);margin-top:2px}
+.gauge{position:relative;height:16px;margin-top:8px;background:var(--soft2);border-radius:4px}
+.gauge .band{position:absolute;top:0;bottom:0;background:var(--ok-line);border-radius:3px;opacity:.65}
+.gauge .tgt{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1px dashed var(--mut)}
+.gauge .pin{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--tx);border-radius:2px}
+.gauge .pin.out{background:var(--l2)}
+.gauge-lab{display:flex;justify-content:space-between;font-size:9.5px;color:var(--mut);
+  font-family:var(--fm);margin-top:2px}
+
+/* ===== 事件卡 ===== */
+.grid12{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.ev{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  text-align:left;display:block;width:100%}
+.ev:hover{background:var(--soft);border-color:#c4d0d6}
+.ev .top{display:flex;align-items:center;gap:7px}
+.ev .ico{font-size:19px}
+.ev .nm{font-weight:700;font-size:13.5px}
+.ev .id{font-size:10px;color:var(--mut);font-family:var(--fm);margin-left:auto}
+.ev .it{font-size:12.5px;color:var(--tx2);margin-top:1px}
+.ev .st{font-size:11.5px;margin-top:5px;display:flex;gap:10px;flex-wrap:wrap;color:var(--mut)}
+.ev .st b{color:var(--tx)}
+.ev.l1{border-color:var(--l1-line);background:var(--l1-bg)}
+.ev.l2{border-color:var(--l2-line);background:var(--l2-bg)}
+.ev .mine{font-size:11.5px;font-weight:600;margin-top:4px}
+.ev.l1 .mine{color:var(--l1)}
+.sdot{width:8px;height:8px;border-radius:99px;background:#c3cdd2;flex-shrink:0}
+.sdot.l1{background:var(--l1);width:10px;height:10px;animation:pulse 1.5s ease-in-out infinite}
+.sdot.l2{background:var(--l2)}
+.sdot.l3{background:var(--l3)}
+.sdot.ok{background:var(--ok)}
+
+/* ===== 圖表 ===== */
+.chartrow{display:grid;grid-template-columns:1.35fr 1fr;gap:14px}
+svg.ch{width:100%;height:auto;display:block;overflow:visible}
+.ax{font-size:9.5px;fill:var(--mut);font-family:var(--fm)}
+.axl{font-size:10px;fill:var(--tx2);font-family:var(--fm)}
+.endlab{font-size:10.5px;font-family:var(--fm);font-weight:600}
+.note{font-size:11.5px;color:var(--mut);margin-top:7px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--tx2);margin-top:6px}
+.legend i{width:13px;height:3px;display:inline-block;vertical-align:middle;margin-right:4px;border-radius:2px}
+.legend i.dash{background:none;border-top:2px dashed var(--mut);height:0}
+.legend i.band{height:9px;background:#41545f;opacity:.2;border-radius:2px}
+
+.heat{border-collapse:separate;border-spacing:2px;width:100%}
+.heat th{font-size:10px;color:var(--mut);font-weight:400;font-family:var(--fm);padding:0 3px;
+  text-align:right;white-space:nowrap}
+.heat thead th{text-align:center}
+.heat td{height:19px;border-radius:2px}
+.ramp{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10.5px;color:var(--mut);
+  font-family:var(--fm)}
+.ramp i{width:15px;height:10px;display:block}
+
+/* ===== 四個入口（L8-3） ===== */
+.entries{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.entry{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  text-align:left}
+.entry:hover{background:var(--soft)}
+.entry .k{font-size:10.5px;color:var(--mut);font-family:var(--fm);letter-spacing:.06em}
+.entry .t{font-weight:700;font-size:13.5px;margin-top:1px}
+.entry .d{font-size:11.5px;color:var(--mut)}
+.entry[aria-pressed=true]{border-color:var(--ink);background:var(--soft2)}
+.searchbox{display:flex;gap:7px;margin-top:10px}
+.searchbox input{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 11px;
+  font-family:inherit;font-size:13px;background:var(--soft)}
+.searchbox input:focus{outline:2px solid var(--ink);outline-offset:1px}
+.hits{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.hit{background:var(--soft2);border:1px solid var(--line);border-radius:99px;padding:3px 11px;
+  font-size:12.5px}
+.hit:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ===== 表 ===== */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:10.5px;color:var(--mut);font-family:var(--fm);letter-spacing:.06em;
+  text-transform:uppercase;text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+.tbl td{padding:8px 9px;border-bottom:1px solid var(--line2)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr.l1 td{background:var(--l1-bg)}
+.tbl tr.l1 td:first-child{box-shadow:inset 4px 0 0 var(--l1)}
+.tbl tr.l2 td{background:var(--l2-bg)}
+.tbl tr.click:hover td{background:var(--soft);cursor:pointer}
+
+/* ===== 群組容器（L6-1） ===== */
+.grp{border:1px solid var(--line2);border-radius:9px;padding:10px 12px;background:var(--soft)}
+.grp-t{font-size:10.5px;color:var(--mut);font-family:var(--fm);letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:7px}
+.grp-row{display:flex;gap:16px;flex-wrap:wrap}
+.grp-row>div{min-width:80px}
+.grp-row .l{font-size:11px;color:var(--mut)}
+.grp-row .v{font-size:17px;font-weight:700}
+.grp-row .v.red{color:var(--l1)}
+
+/* ===== 校準 ===== */
+.calib{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.calib>div{background:var(--soft);border:1px solid var(--line2);border-radius:8px;padding:8px 11px}
+.calib .l{font-size:10.5px;color:var(--mut);font-family:var(--fm)}
+.calib .v{font-size:19px;font-weight:700}
+.calib .v.ok{color:var(--ok)}
+.calib .v.warn{color:var(--l2)}
+
+/* ===== 退貨流程（3 步 L10-3） ===== */
+.mask{position:fixed;inset:0;background:rgba(9,24,31,.55);display:none;z-index:60;
+  align-items:center;justify-content:center;padding:18px}
+.mask.on{display:flex}
+.modal{background:#fff;border-radius:14px;max-width:440px;width:100%;overflow:hidden;
+  box-shadow:0 30px 80px rgba(9,24,31,.35);max-height:92vh;display:flex;flex-direction:column}
+.modal-h{background:var(--l1-bg);border-bottom:1px solid var(--l1-line);padding:13px 18px}
+.modal-h .tag{font-family:var(--fm);font-size:10px;letter-spacing:.14em;color:var(--l1)}
+.modal-h h3{font-size:16px;color:#8f2018;margin-top:1px}
+.modal-b{padding:16px 18px;overflow:auto}
+.steps{display:flex;gap:6px;margin-bottom:14px}
+.steps span{flex:1;font-size:11px;color:var(--mut);font-family:var(--fm);text-align:center;
+  padding-top:14px;position:relative}
+.steps span::before{content:"";position:absolute;top:4px;left:0;right:0;height:3px;
+  background:var(--soft2);border-radius:2px}
+.steps span.on{color:var(--l1);font-weight:600}
+.steps span.on::before{background:var(--l1)}
+.steps span.done::before{background:var(--ok)}
+.opt{display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:9px;
+  padding:10px 13px;background:#fff;margin-bottom:8px;font-size:13px}
+.opt:hover{background:var(--soft)}
+.opt[aria-pressed=true]{border-color:var(--l1);background:var(--l1-bg)}
+.opt b{display:block;font-size:13.5px}
+.opt span{font-size:11.5px;color:var(--mut)}
+.modal-note{background:var(--soft);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--tx2)}
+.modal-f{display:flex;gap:8px;padding:0 18px 16px}
+.modal-f .btn{flex:1}
+.done-ico{width:52px;height:52px;border-radius:99px;background:var(--ok-bg);color:var(--ok);
+  display:grid;place-items:center;font-size:26px;margin:4px auto 10px}
+
+/* ===== 診斷標記 ===== */
+.diagbar{display:none;background:var(--ink);color:#fff;border-radius:var(--r);padding:11px 15px;
+  margin-bottom:14px;font-size:12.5px}
+body.diag .diagbar{display:block}
+.diagbar b{font-family:var(--fm);font-size:10.5px;letter-spacing:.1em}
+.diagbar p{margin:5px 0 0;opacity:.82}
+body.diag [data-diag]{position:relative;outline:1px dashed rgba(22,48,60,.42);outline-offset:3px;
+  margin-top:14px}
+body.diag .tb-f[data-diag],body.diag .state-r[data-diag]{margin-top:0}
+body.diag [data-diag]::after{content:attr(data-diag);position:absolute;top:-10px;left:8px;
+  background:var(--ink);color:#fff;font-family:var(--fm);font-size:9.5px;font-weight:600;
+  letter-spacing:.05em;padding:1px 6px;border-radius:3px;z-index:9;white-space:nowrap;
+  pointer-events:none}
+
+footer{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
+  font-family:var(--fm);font-size:11px;color:var(--mut);line-height:1.85}
+footer a{color:var(--tx2)}
+
+@media (max-width:960px){
+  .stem-b{grid-template-columns:1fr}
+  .kpis,.entries,.calib{grid-template-columns:repeat(2,1fr)}
+  .grid12{grid-template-columns:repeat(2,1fr)}
+  .chartrow{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .kpis,.entries,.calib,.grid12{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+
+<div class="fake">教學示範頁 · <b>所有品牌、事件、檢驗數據與機關名稱均為虛構</b> · 非官方平台，請勿引用或轉傳為真實召回資訊</div>
+
+<div class="topbar">
+  <div class="brand">食安召回查詢<span>示範站</span></div>
+  <div class="tb-f" data-diag="L10-2 貼齊上緣">
+    <select id="fCity" aria-label="縣市">
+      <option value="all">全台 22 縣市</option>
+      <option value="臺北市" selected>臺北市</option>
+      <option value="新北市">新北市</option>
+      <option value="桃園市">桃園市</option>
+      <option value="臺中市">臺中市</option>
+      <option value="臺南市">臺南市</option>
+      <option value="高雄市">高雄市</option>
+    </select>
+    <select id="fCat" aria-label="食品類別">
+      <option value="all">全部類別</option>
+      <option>乳品</option><option>零食</option><option>飲料</option>
+      <option>烘焙</option><option>茶飲</option><option>生鮮</option>
+    </select>
+    <select id="fPeriod" aria-label="期間">
+      <option>生效中</option><option>近 30 日</option><option>近 12 個月</option>
+    </select>
+  </div>
+  <div class="tb-r">
+    <span>資料 <b>09:05</b> 同步</span>
+    <button class="diagbtn" id="diagBtn" aria-pressed="false">顯示診斷標記</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="diagbar">
+    <b>診斷標記已開啟</b>
+    <p>虛線框上的代號對應 <a href="index.html" style="color:#9fd8e4">Dashboard 診斷框架</a> 的 44 項。
+    這份儀表板是照那 44 項設計的，開著標記逐塊看，就知道每一個區塊在解決哪一項。</p>
+  </div>
+
+  <div class="state">
+    <nav class="crumb" id="crumb" aria-label="目前位置"></nav>
+    <div class="state-r" data-diag="L4-4 狀態常駐">
+      <span class="pill" id="pCity">縣市：臺北市</span>
+      <span class="pill" id="pCat">類別：全部</span>
+      <span class="pill" id="pPeriod">期間：生效中</span>
+    </div>
+  </div>
+
+  <main id="view"></main>
+
+  <footer>
+    本頁為國立政治大學新聞學系「資訊視覺化」課程的教學示範。<br>
+    「清晨牧場」「海鹽小舖」「森果日和」「穀日子」「雲頂茶莊」「鮮綠農場」「全喜超市」「順心便利」
+    等名稱、事件編號、檢驗數值、報告編號均為虛構，不指涉任何真實企業、產品或政府機關。<br>
+    設計依據：<a href="index.html">Dashboard 診斷框架 v2</a>，按頂端「顯示診斷標記」可逐塊對照。 · 李怡志
+  </footer>
+</div>
+
+<div class="mask" id="mask" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="modal">
+    <div class="modal-h">
+      <div class="tag" id="mTag">LEVEL 1 · 退貨申請</div>
+      <h3 id="mTitle"></h3>
+    </div>
+    <div class="modal-b" id="mBody"></div>
+    <div class="modal-f" id="mFoot"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   假資料。品牌與事件全為虛構。
+   數字自洽：本月 Level 1 共 3 件；近 12 個月 Level 1 共 12 件。
+   ===================================================================== */
+var EVENTS = [
+{ id:'RC-2026-0913', lvl:1, cat:'乳品', ico:'🥛',
+  brand:'清晨牧場', item:'高鈣鮮乳 950ml', date:'9/13',
+  say:'這批鮮乳驗出的動物用藥超過標準 4 倍。喝了不會馬上不舒服，但不要再喝，也不要給小孩喝。',
+  cue:'藍白紙盒、左上角乳牛圖示、深藍色瓶蓋',
+  prior:'你 9/8 在住家附近的「全喜超市」買過乳品——這則跟你可能有關。',
+  found:'磺胺二甲嘧啶 0.42 ppm', std:'0.10 ppm', ratio:4.2,
+  lot:'效期 2026/10/02 – 2026/10/18', barcode:'4712 3456 7890 1',
+  cities:14, spots:2, batches:6, units:'約 18,400 瓶',
+  report:'TFS-2026-1147', src:'衛生局抽驗 9/11 · 平台同步 09:05',
+  action:'停止飲用，可憑包裝退貨（不需發票）', removed:1.8,
+  channels:'全喜超市 · 順心便利 · 大買家量販',
+  batchList:[
+    {lot:'L2610-02', exp:'2026/10/02', n:'約 2,900 瓶', st:1},
+    {lot:'L2610-06', exp:'2026/10/06', n:'約 3,400 瓶', st:1},
+    {lot:'L2610-09', exp:'2026/10/09', n:'約 3,100 瓶', st:1},
+    {lot:'L2610-13', exp:'2026/10/13', n:'約 3,300 瓶', st:1},
+    {lot:'L2610-16', exp:'2026/10/16', n:'約 2,800 瓶', st:1},
+    {lot:'L2610-18', exp:'2026/10/18', n:'約 2,900 瓶', st:1}]},
+
+{ id:'RC-2026-0908', lvl:2, cat:'零食', ico:'🍘',
+  brand:'海鹽小舖', item:'薄鹽海苔 12入', date:'9/8',
+  say:'標示沒有寫出「蝦」這個過敏原。對甲殼類過敏的人不要吃，其他人不受影響。',
+  cue:'綠色紙盒、右下角浪花圖案',
+  prior:'你的家庭成員設定中沒有登記甲殼類過敏。',
+  found:'標示未載明過敏原（蝦）', std:'應完整載明', ratio:0,
+  lot:'效期 2026/09/20 – 2026/11/02', barcode:'4712 8899 0011 2',
+  cities:9, spots:0, batches:3, units:'約 7,200 盒',
+  report:'TFS-2026-1121', src:'民眾通報 9/8 · 平台同步 09:05',
+  action:'對甲殼類過敏者停止食用，可退貨', removed:2.6,
+  channels:'全喜超市 · 順心便利',
+  batchList:[
+    {lot:'S2609-20', exp:'2026/09/20', n:'約 2,400 盒', st:2},
+    {lot:'S2610-11', exp:'2026/10/11', n:'約 2,500 盒', st:2},
+    {lot:'S2611-02', exp:'2026/11/02', n:'約 2,300 盒', st:2}]},
+
+{ id:'RC-2026-0902', lvl:3, cat:'飲料', ico:'🧃',
+  brand:'森果日和', item:'蜜桃果汁 300ml', date:'9/2',
+  say:'糖度標示與實際不符，沒有安全疑慮。已全數下架，不必特別處理。',
+  cue:'橘色瓶身、白色桃子圖案', prior:'',
+  found:'糖度標示 8.5 Brix，實測 11.2 Brix', std:'誤差需 ≤ 20%', ratio:0,
+  lot:'效期 2026/09/15 – 2026/10/30', barcode:'4712 5566 7788 9',
+  cities:5, spots:0, batches:2, units:'約 4,100 瓶',
+  report:'TFS-2026-1098', src:'例行抽驗 9/2 · 平台同步 09:05',
+  action:'已全數下架，無須退貨', removed:1.2,
+  channels:'大買家量販',
+  batchList:[
+    {lot:'J2609-15', exp:'2026/09/15', n:'約 2,000 瓶', st:3},
+    {lot:'J2610-30', exp:'2026/10/30', n:'約 2,100 瓶', st:3}]},
+
+{ id:'RC-2026-0829', lvl:2, cat:'烘焙', ico:'🍞',
+  brand:'穀日子', item:'全麥吐司 450g', date:'8/29',
+  say:'一批吐司的防腐劑超過標準。已下架完成，家裡若還有請不要吃。',
+  cue:'牛皮紙袋、棕色麥穗貼紙', prior:'',
+  found:'己二烯酸 1.4 g/kg', std:'1.0 g/kg', ratio:1.4,
+  lot:'效期 2026/09/05 前', barcode:'4712 2233 4455 6',
+  cities:6, spots:0, batches:2, units:'約 3,600 條',
+  report:'TFS-2026-1042', src:'例行抽驗 8/28 · 平台同步 09:05',
+  action:'停止食用，可退貨', removed:2.1,
+  channels:'順心便利',
+  batchList:[{lot:'B2609-02', exp:'2026/09/02', n:'約 1,800 條', st:2},
+             {lot:'B2609-05', exp:'2026/09/05', n:'約 1,800 條', st:2}]},
+
+{ id:'RC-2026-0821', lvl:3, cat:'茶飲', ico:'🍵',
+  brand:'雲頂茶莊', item:'高山烏龍茶包 25入', date:'8/21',
+  say:'產地標示不清，品質與安全沒有問題。已改標重新上架。',
+  cue:'墨綠鐵罐、金色山形標', prior:'',
+  found:'產地標示不完整', std:'應標示原產國', ratio:0,
+  lot:'效期 2027/02/10 前', barcode:'4712 7788 9900 3',
+  cities:4, spots:0, batches:1, units:'約 2,200 罐',
+  report:'TFS-2026-0987', src:'例行查核 8/20 · 平台同步 09:05',
+  action:'已改標，無須退貨', removed:1.0,
+  channels:'大買家量販',
+  batchList:[{lot:'T2702-10', exp:'2027/02/10', n:'約 2,200 罐', st:3}]},
+
+{ id:'RC-2026-0815', lvl:2, cat:'生鮮', ico:'🥬',
+  brand:'鮮綠農場', item:'即食生菜 200g', date:'8/15',
+  say:'一批生菜檢出大腸桿菌群超標。效期已過，若冷凍保存請丟棄。',
+  cue:'透明盒、綠色葉片貼紙', prior:'',
+  found:'大腸桿菌群 2,400 CFU/g', std:'1,000 CFU/g', ratio:2.4,
+  lot:'效期 2026/08/22 前', barcode:'4712 6677 8899 0',
+  cities:7, spots:0, batches:2, units:'約 5,100 盒',
+  report:'TFS-2026-0931', src:'衛生局抽驗 8/14 · 平台同步 09:05',
+  action:'停止食用並丟棄', removed:1.6,
+  channels:'全喜超市 · 大買家量販',
+  batchList:[{lot:'V2608-19', exp:'2026/08/19', n:'約 2,500 盒', st:2},
+             {lot:'V2608-22', exp:'2026/08/22', n:'約 2,600 盒', st:2}]}
+];
+
+/* 各事件在各縣市的銷售點數（決定「與我有關」） */
+var CITY_SPOTS = {
+ 'RC-2026-0913':{'臺北市':2,'新北市':3,'桃園市':2,'臺中市':2,'臺南市':1,'高雄市':2},
+ 'RC-2026-0908':{'臺北市':0,'新北市':1,'桃園市':1,'臺中市':1,'臺南市':0,'高雄市':1},
+ 'RC-2026-0902':{'臺北市':0,'新北市':0,'桃園市':1,'臺中市':1,'臺南市':0,'高雄市':0},
+ 'RC-2026-0829':{'臺北市':0,'新北市':1,'桃園市':0,'臺中市':1,'臺南市':1,'高雄市':0},
+ 'RC-2026-0821':{'臺北市':0,'新北市':0,'桃園市':0,'臺中市':1,'臺南市':0,'高雄市':1},
+ 'RC-2026-0815':{'臺北市':0,'新北市':1,'桃園市':1,'臺中市':0,'臺南市':1,'高雄市':1}
+};
+
+/* 近 12 個月 Level 1 件數；常態帶 1–4（±2σ），本月至今 3 件 */
+var MONTHS = ['去年10','11','12','1','2','3','4','5','6','7','8','9'];
+var L1_HIST = [2,1,3,2,4,2,1,3,2,3,2,3];
+var L1_BAND = {lo:1, hi:4, avg:2.3};
+
+/* 各縣市 × 類別 的近 12 個月通報件數（熱力圖） */
+var HCITY = ['臺北市','新北市','桃園市','臺中市','臺南市','高雄市','新竹市','彰化縣'];
+var HCAT  = ['乳品','零食','飲料','烘焙','茶飲','生鮮'];
+var HEAT = [
+ [ 6, 9, 7, 5, 3,11],
+ [ 8,12, 9, 7, 4,14],
+ [ 5, 7, 6, 4, 3, 9],
+ [ 7,10, 8, 6, 5,12],
+ [ 4, 6, 5, 3, 3, 8],
+ [ 6, 9, 7, 5, 4,11],
+ [ 3, 4, 3, 2, 2, 5],
+ [ 3, 5, 4, 3, 2, 6]
+];
+
+/* 本季 vs 去年同季，各類別件數（成對柱） */
+var QUARTER = [
+ {nm:'乳品', now:11, prev:8}, {nm:'零食', now:14, prev:15}, {nm:'飲料', now:9, prev:9},
+ {nm:'烘焙', now:7, prev:6}, {nm:'茶飲', now:5, prev:7}, {nm:'生鮮', now:18, prev:12}
+];
+
+/* 平台可信度（L5-2）與代價比（L3-3） */
+var TRUST = {n12:12, hit:12, fa:4.1};
+var COST  = {miss:2340000, falseAlarm:4200};
+
+/* 個人門檻校準（L3-4） */
+var CALIB = {got:8, checked:6, hadIt:2, ignoredHadIt:1};
+
+/* 我的查詢與退貨紀錄（L8-3 的 Locate） */
+var MYLOG = [
+ {d:'9/8 21:14', act:'查詢', it:'清晨牧場 高鈣鮮乳', st:'—'},
+ {d:'8/30 10:02', act:'退貨', it:'穀日子 全麥吐司', st:'已完成 · RT-8841'},
+ {d:'8/16 19:47', act:'查詢', it:'鮮綠農場 即食生菜', st:'—'}
+];
+
+/* 下架完成天數：目標 <3 天 */
+var REMOVE = {now:1.8, tgt:3, prevQ:2.9, lo:1.2, hi:3.4};
+
+var VIRIDIS = ['#440154','#414487','#2a788e','#22a884','#7ad151','#fde725'];
+
+/* ===================================================================== */
+function $(s,r){return (r||document).querySelector(s)}
+function n(x){return x.toLocaleString('en-US')}
+function ramp(t,pal){
+  t=Math.max(0,Math.min(1,t));
+  var k=t*(pal.length-1), i=Math.floor(k);
+  if(i>=pal.length-1) return pal[pal.length-1];
+  var f=k-i, a=pal[i], b=pal[i+1];
+  function m(s,e){return Math.round(parseInt(a.slice(s,e),16)*(1-f)+parseInt(b.slice(s,e),16)*f)}
+  return 'rgb('+m(1,3)+','+m(3,5)+','+m(5,7)+')';
+}
+function spotsIn(ev){
+  var t=CITY_SPOTS[ev.id]; if(!t) return 0;
+  if(S.city==='all'){var s=0;for(var k in t)s+=t[k];return s}
+  return t[S.city]||0;
+}
+function lvName(l){return l===1?'LEVEL 1':l===2?'LEVEL 2':'LEVEL 3'}
+function lvWhat(l){
+  return l===1?'立即停止食用':l===2?'特定族群或已過期，仍應處理':'無安全疑慮，已處理完成';
+}
+
+function gauge(v,lo,hi,tgt,invert){
+  var pad=(hi-lo)*0.35;
+  var min=Math.min(lo,v,tgt||lo)-pad, max=Math.max(hi,v,tgt||hi)+pad;
+  var sp=max-min||1;
+  function p(x){return ((x-min)/sp*100).toFixed(1)}
+  var out = invert ? v>tgt : (v<lo||v>hi);
+  return '<div class="gauge">'+
+    '<span class="band" style="left:'+p(lo)+'%;width:'+((hi-lo)/sp*100).toFixed(1)+'%"></span>'+
+    (tgt?'<span class="tgt" style="left:'+p(tgt)+'%"></span>':'')+
+    '<span class="pin'+(out?' out':'')+'" style="left:'+p(v)+'%"></span></div>'+
+    '<div class="gauge-lab"><span>'+lo+'</span><span>常態帶'+(tgt?' · 虛線＝目標 '+tgt:'')+
+    '</span><span>'+hi+'</span></div>';
+}
+
+/* 折線：標籤直接長在線尾（L4-2），本月估計帶 ±1σ（L9-1），Y 軸自 0（L9-2） */
+function lineChart(hist, band, w, ht){
+  w=w||520; ht=ht||178;
+  var padL=30, padR=64, padT=14, padB=24;
+  var mx=Math.max.apply(null,hist.concat([band?band.hi:0, L1_BAND.hi]))+1;
+  var N=hist.length-1;
+  function X(i){return padL+i*(w-padL-padR)/N}
+  function Y(v){return ht-padB-v/mx*(ht-padT-padB)}
+  var g='';
+  for(var k=0;k<=mx;k++){
+    if(mx>6 && k%2) continue;
+    g+='<line x1="'+padL+'" y1="'+Y(k)+'" x2="'+(w-padR)+'" y2="'+Y(k)+
+       '" stroke="#e9eef1"/><text x="'+(padL-6)+'" y="'+(Y(k)+3)+'" class="ax" text-anchor="end">'+k+'</text>';
+  }
+  /* 常態帶：讓人判斷偏離是否顯著（L3-1） */
+  g+='<rect x="'+padL+'" y="'+Y(L1_BAND.hi)+'" width="'+(w-padL-padR)+'" height="'+
+     (Y(L1_BAND.lo)-Y(L1_BAND.hi))+'" fill="#22a45d" opacity=".10"/>';
+  g+='<text x="'+(w-padR+5)+'" y="'+(Y(L1_BAND.hi)+11)+'" class="ax">常態 '+L1_BAND.lo+'–'+L1_BAND.hi+' 件</text>';
+  MONTHS.forEach(function(d,i){
+    if(i%2===0||i===MONTHS.length-1)
+      g+='<text x="'+X(i)+'" y="'+(ht-7)+'" class="ax" text-anchor="middle">'+d+'</text>';
+  });
+  if(band){
+    g+='<line x1="'+X(N)+'" y1="'+Y(band.lo)+'" x2="'+X(N)+'" y2="'+Y(band.hi)+
+       '" stroke="#41545f" stroke-width="7" opacity=".22" stroke-linecap="round"/>';
+    g+='<text x="'+(X(N)+7)+'" y="'+(Y(band.hi)-3)+'" class="endlab" fill="#41545f">全月估 '+
+       band.mid+'±'+band.sd+'</text>';
+  }
+  var d=hist.map(function(v,i){return (i?'L':'M')+X(i)+','+Y(v)}).join(' ');
+  g+='<path d="'+d+'" fill="none" stroke="#132a35" stroke-width="2.2"/>';
+  hist.forEach(function(v,i){g+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="2.6" fill="#132a35"/>'});
+  g+='<text x="'+(X(N)+7)+'" y="'+(Y(hist[N])+13)+'" class="endlab" fill="#132a35">本月至今 '+hist[N]+'</text>';
+  g+='<text x="'+padL+'" y="'+(padT-2)+'" class="ax">Y 軸自 0 起 · 件數</text>';
+  return '<svg class="ch" viewBox="0 0 '+w+' '+ht+'" role="img" aria-label="近 12 個月 Level 1 件數">'+g+'</svg>';
+}
+
+function pairBars(items,w,ht){
+  w=w||360; ht=ht||178;
+  var padL=26, padB=26, padT=14;
+  var mx=0; items.forEach(function(it){mx=Math.max(mx,it.now,it.prev)});
+  mx=Math.ceil(mx/5)*5;
+  var gw=(w-padL-6)/items.length, bw=Math.min(15,gw*0.3);
+  function Y(v){return ht-padB-v/mx*(ht-padT-padB)}
+  var g='';
+  for(var k=0;k<=mx;k+=5){
+    g+='<line x1="'+padL+'" y1="'+Y(k)+'" x2="'+w+'" y2="'+Y(k)+'" stroke="#e9eef1"/>'+
+       '<text x="'+(padL-5)+'" y="'+(Y(k)+3)+'" class="ax" text-anchor="end">'+k+'</text>';
+  }
+  items.forEach(function(it,i){
+    var x=padL+i*gw+gw/2;
+    g+='<rect x="'+(x-bw-2)+'" y="'+Y(it.prev)+'" width="'+bw+'" height="'+(ht-padB-Y(it.prev))+
+       '" fill="#c3cdd2" rx="2"/>';
+    g+='<rect x="'+(x+2)+'" y="'+Y(it.now)+'" width="'+bw+'" height="'+(ht-padB-Y(it.now))+
+       '" fill="#132a35" rx="2"/>';
+    g+='<text x="'+x+'" y="'+(ht-9)+'" class="axl" text-anchor="middle">'+it.nm+'</text>';
+  });
+  g+='<text x="'+padL+'" y="'+(padT-3)+'" class="ax">Y 軸自 0 起</text>';
+  return '<svg class="ch" viewBox="0 0 '+w+' '+ht+'" role="img" aria-label="本季與去年同季各類別件數">'+g+'</svg>';
+}
+
+/* ===================================================================== */
+var S={city:'臺北市', cat:'all', period:'生效中',
+       view:'overview', ev:null, batch:null, entry:'browse', q:''};
+
+function visible(){
+  return EVENTS.filter(function(e){
+    if(S.cat!=='all' && e.cat!==S.cat) return false;
+    return true;
+  });
+}
+
+function crumb(){
+  var c=$('#crumb'), out='';
+  if(S.view==='overview') out='<b>全部生效中的召回事件</b>'+(S.city!=='all'?' · '+S.city:'');
+  else if(S.view==='event')
+    out='<button data-go="overview">全部事件</button> › <b>'+S.ev.brand+' '+S.ev.item+'</b>';
+  else
+    out='<button data-go="overview">全部事件</button> › <button data-go="event">'+S.ev.brand+
+        '</button> › <b>批次 '+S.batch.lot+'</b>';
+  c.innerHTML=out;
+  $('#pCity').textContent='縣市：'+(S.city==='all'?'全台':S.city);
+  $('#pCat').textContent='類別：'+(S.cat==='all'?'全部':S.cat);
+  $('#pPeriod').textContent='期間：'+S.period;
+}
+
+/* ---------- 杯腳（L10-4） ---------- */
+function stemHTML(){
+  var e=EVENTS.filter(function(x){return x.lvl===1})[0];
+  if(!e) return '';
+  var sp=spotsIn(e);
+  return ''+
+  '<section class="stem" data-diag="L10-4 杯腳 · L1-3 左上 · L8-2 前 10 秒">'+
+    '<div class="stem-h"><span class="dot"></span>'+
+      '<span class="tag">現在最該處理的一件事</span>'+
+      '<span style="font-size:11.5px;color:#8f2018;margin-left:auto">'+
+      (sp>0 ? '你所在的'+S.city+'有 '+sp+' 個銷售點 · 住家 3 km 內 2 處'
+            : '你所在的'+S.city+'沒有銷售點，但你可能在別處買過')+'</span></div>'+
+    '<div class="stem-b">'+
+      '<div>'+
+        '<div class="stem-say" data-diag="L7-1 圖＋文 · L7-2 具體語言">'+
+          '<span class="thumb">'+e.ico+'<b>✕</b></span>'+
+          '<div><div class="who">'+e.brand+'　'+e.item+'</div>'+
+          '<h2>'+e.say+'</h2>'+
+          '<div class="cue">📦 家裡怎麼認：'+e.cue+'</div></div></div>'+
+        '<div class="stem-nums" data-diag="L4-1 四個組塊">'+
+          '<div class="numbox"><div class="l">檢出值</div><div class="v red">'+e.found.split(' ')[1]+' '+
+            (e.found.split(' ')[2]||'')+'</div><div class="s">標準 '+e.std+'</div></div>'+
+          '<div class="numbox"><div class="l">超出標準</div><div class="v red">'+e.ratio+' 倍</div>'+
+            '<div class="s">實際 ÷ 上限</div></div>'+
+          '<div class="numbox"><div class="l">你要做的事</div><div class="v" style="font-size:14px">停止飲用</div>'+
+            '<div class="s">可退貨，不需發票</div></div>'+
+          '<div class="numbox"><div class="l">影響批次</div><div class="v">'+e.batches+' 批</div>'+
+            '<div class="s">'+e.lot+'</div></div>'+
+        '</div>'+
+        '<div class="cost" data-diag="L3-3 代價比 → 平台為何寧可誤報">'+
+          '<span>漏掉一件的代價 <b>NT$'+n(COST.miss)+'</b></span>'+
+          '<span style="color:var(--mut)">vs</span>'+
+          '<span>誤報一次 <b style="color:var(--ok)">NT$'+n(COST.falseAlarm)+'</b></span>'+
+          '<span style="margin-left:auto">代價比 <b>'+Math.round(COST.miss/COST.falseAlarm)+
+          ' : 1</b> → 本平台寧可誤報</span></div>'+
+        '<div class="src" data-diag="L5-1 可驗證來源">來源：'+e.src+' · 檢驗報告 '+e.report+
+          ' · 通路：'+e.channels+'</div>'+
+      '</div>'+
+      '<div class="stem-act">'+
+        '<button class="btn primary" data-ret="'+e.id+'">申請退貨 · 3 步驟</button>'+
+        '<div data-diag="L5-3 主動推論">'+
+          '<button class="btn sm" style="width:100%;margin-bottom:6px" data-verify="scan">'+
+          '掃描包裝條碼比對批次</button>'+
+          '<button class="btn sm" style="width:100%" data-verify="rep">查看檢驗報告 '+e.report+'</button></div>'+
+        '<div class="trust" data-diag="L5-2 建立正確先驗">'+
+          '通知可信度：近 12 個月 Level 1 共 '+TRUST.n12+' 次，事後確認屬實 <b>'+TRUST.hit+' 次</b>，'+
+          '假警報率 <b>'+TRUST.fa+'%</b>。</div>'+
+        (e.prior?'<div class="trust" style="border-style:dashed" data-diag="L7-4 連結既有記憶">💡 '+
+          e.prior+'</div>':'')+
+      '</div>'+
+    '</div>'+
+  '</section>';
+}
+
+function alertsHTML(){
+  var out='', c=0;
+  visible().forEach(function(e){
+    if(e.lvl===2){c++;out+='<div class="al l2"><span class="lv">LEVEL 2</span>'+
+      '<span class="tx"><b>'+e.brand+' '+e.item+'</b>　'+e.say+
+      ' <span class="why">（'+e.cue+'）</span></span>'+
+      '<button class="btn sm" data-ev="'+e.id+'">查看這件事的 '+e.batches+' 個批次 →</button></div>'}
+  });
+  visible().forEach(function(e){
+    if(e.lvl===3){c++;out+='<div class="al l3"><span class="lv">LEVEL 3</span>'+
+      '<span class="tx">'+e.brand+' '+e.item+'　'+e.say+'</span>'+
+      '<button class="btn sm" data-ev="'+e.id+'">查看 →</button></div>'}
+  });
+  if(!c) return '';
+  return '<section class="card" data-diag="L3-5 三級 ＝ 三種視覺強度"><div class="card-h">'+
+    '<h3>其他事件</h3><span class="sub">Level 2 需要特定族群處理 · Level 3 無安全疑慮</span>'+
+    '<span class="rt">共 '+c+' 件</span></div><div class="card-b">'+out+'</div></section>';
+}
+
+function kpisHTML(){
+  var list=visible();
+  /* 本月通報件數用月度序列的最後一格，與下方趨勢圖同一個來源，避免兩處數字打架 */
+  var l1=L1_HIST[L1_HIST.length-1];
+  var live1=list.filter(function(e){return e.lvl===1}).length;
+  var mySpots=list.reduce(function(a,e){return a+(e.lvl===1?spotsIn(e):0)},0);
+  var scope=S.city==='all'?'全台':S.city;
+  function kpi(l,v,base,g,diag){
+    return '<div class="kpi"'+(diag?' data-diag="'+diag+'"':'')+'>'+
+      '<div class="l">'+l+'</div><div class="v tnum">'+v+'</div>'+
+      '<div class="base">'+base+'</div>'+(g||'')+'</div>';
+  }
+  return '<section data-diag="L9-3 每個數字都帶比較基準"><div class="kpis">'+
+    kpi('你附近的 Level 1 銷售點 · '+scope,
+        mySpots+' <span style="font-size:14px;font-weight:400;color:var(--mut)">處</span>',
+        '住家 3 km 內 2 處 · 上次有事件是 6 月 · 你已查詢 1 次',
+        '', 'L8-2 個人相關性放最前 · L4-1 四組塊')+
+    kpi('本月 Level 1 通報', l1+' 件',
+        '常態 '+L1_BAND.lo+'–'+L1_BAND.hi+' 件 · 去年同月 2 件 · 12 個月平均 '+L1_BAND.avg+
+        ' · 其中 '+live1+' 件仍生效',
+        gauge(l1,L1_BAND.lo,L1_BAND.hi,0), 'L3-1 常態帶')+
+    kpi('平均下架完成', REMOVE.now+' 天',
+        '目標 <'+REMOVE.tgt+' 天 · 上季 '+REMOVE.prevQ+' 天 · 常態 '+REMOVE.lo+'–'+REMOVE.hi,
+        gauge(REMOVE.now,REMOVE.lo,REMOVE.hi,REMOVE.tgt,true))+
+    kpi('通知假警報率', TRUST.fa+'%',
+        '目標 <5% · 上季 4.6% · 近 12 個月 '+TRUST.hit+'/'+TRUST.n12+' 件屬實',
+        gauge(TRUST.fa,2,6,5,true))+
+    '</div></section>';
+}
+
+function eventGridHTML(){
+  var list=visible();
+  var cells=list.map(function(e){
+    var cls=e.lvl===1?'l1':e.lvl===2?'l2':'';
+    var dot=e.lvl===1?'l1':e.lvl===2?'l2':'l3';
+    var sp=spotsIn(e);
+    return '<button class="ev '+cls+'" data-ev="'+e.id+'">'+
+      '<div class="top"><span class="sdot '+dot+'"></span><span class="ico">'+e.ico+'</span>'+
+      '<span class="nm">'+e.brand+'</span><span class="id">'+e.id+'</span></div>'+
+      '<div class="it">'+e.item+'</div>'+
+      '<div class="st"><span>'+lvName(e.lvl)+'</span><span>影響 <b>'+e.cities+'</b> 縣市</span>'+
+      '<span><b>'+e.batches+'</b> 批次</span><span>'+e.date+' 通報</span></div>'+
+      (sp>0?'<div class="mine">'+S.city+'有 '+sp+' 個銷售點</div>'
+           :'<div class="mine" style="color:var(--mut)">'+
+            (S.city==='all'?'':S.city+'無銷售點')+'</div>')+
+      '</button>';
+  }).join('');
+  return '<section class="card" data-diag="L10-5 Overview → 點一件事縮放 → 批次詳情">'+
+    '<div class="card-h"><h3>生效中的召回事件</h3>'+
+    '<span class="sub">依嚴重度排序，不是依時間</span>'+
+    '<span class="rt">'+list.length+' 件 · 點任一件進入</span></div>'+
+    '<div class="card-b"><div class="grid12">'+cells+'</div></div></section>';
+}
+
+function trendHTML(){
+  return '<div class="chartrow">'+
+    '<section class="card"><div class="card-h"><h3>近 12 個月 Level 1 件數</h3>'+
+      '<span class="sub">綠帶為常態範圍</span></div>'+
+      '<div class="card-b"><div data-diag="L9-1 本月估計帶 ±1σ · L9-2 Y 軸自 0 · L3-1 常態帶">'+
+      lineChart(L1_HIST,{mid:4,sd:1.6,lo:2.4,hi:5.6})+'</div>'+
+      '<div class="legend"><span><i style="background:#132a35"></i>已確認件數</span>'+
+      '<span><i class="band"></i>全月估計 ±1σ</span>'+
+      '<span><i style="background:#22a45d;opacity:.35"></i>常態帶</span></div>'+
+      '<p class="note">本月至今 3 件，全月估計 4±1.6 件——與常態上界 4 件重疊，'+
+      '還不足以說「今年特別多」。</p></div></section>'+
+    '<section class="card"><div class="card-h"><h3>本季 vs 去年同季</h3>'+
+      '<span class="sub">成對並排</span></div>'+
+      '<div class="card-b"><div data-diag="L6-2 比較對象相鄰">'+pairBars(QUARTER)+'</div>'+
+      '<div class="legend"><span><i style="background:#c3cdd2"></i>去年同季</span>'+
+      '<span><i style="background:#132a35"></i>本季</span></div>'+
+      '<p class="note" data-diag="L9-4 只有真的超出常態的才強調">生鮮 18 vs 12 是唯一超出常態波動的差距；'+
+      '其餘五類的差距都落在歷年季間變異內，因此不上色。</p>'+
+      '</div></section></div>';
+}
+
+function heatHTML(){
+  var flat=[]; HEAT.forEach(function(r){r.forEach(function(v){flat.push(v)})});
+  var mn=Math.min.apply(null,flat), mx=Math.max.apply(null,flat);
+  var head='<tr><th></th>'+HCAT.map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr>';
+  var body=HCITY.map(function(c,i){
+    return '<tr><th>'+c+'</th>'+HEAT[i].map(function(v,j){
+      return '<td title="'+c+' × '+HCAT[j]+'：'+v+' 件" style="background:'+
+        ramp((v-mn)/(mx-mn||1),VIRIDIS)+'"></td>';
+    }).join('')+'</tr>';
+  }).join('');
+  var strip=''; for(var k=0;k<12;k++) strip+='<i style="background:'+ramp(k/11,VIRIDIS)+'"></i>';
+  return '<section class="card"><div class="card-h"><h3>近 12 個月通報件數</h3>'+
+    '<span class="sub">縣市 × 食品類別 · 感知均勻色階（viridis）</span></div>'+
+    '<div class="card-b"><div data-diag="L9-5 不用彩虹色，等距件數＝等距感知">'+
+    '<table class="heat">'+head+body+'</table></div>'+
+    '<div class="ramp">'+strip+'<span>低 '+mn+' 件 → 高 '+mx+' 件</span></div>'+
+    '<p class="note">件數多不等於風險高——人口多的縣市本來就通報得多。這張圖只能看分佈，不能看安全性。</p>'+
+    '</div></section>';
+}
+
+function calibHTML(){
+  return '<section class="card" data-diag="L3-4 讓你看得到自己的門檻"><div class="card-h">'+
+    '<h3>你的這一季</h3><span class="sub">只有你看得到 · 每季更新</span></div>'+
+    '<div class="card-b"><div class="calib">'+
+    '<div><div class="l">收到通知</div><div class="v">'+CALIB.got+' 則</div></div>'+
+    '<div><div class="l">你點進去查了</div><div class="v ok">'+CALIB.checked+' 則</div></div>'+
+    '<div><div class="l">家裡真的有</div><div class="v">'+CALIB.hadIt+' 則</div></div>'+
+    '<div><div class="l">忽略的裡面家裡有</div><div class="v warn">'+CALIB.ignoredHadIt+' 則</div></div>'+
+    '</div><p class="note">你忽略的 2 則裡有 1 則家裡真的有。'+
+    '以「漏掉 vs 白查一次」的代價差距來看，你的門檻設得偏高——建議把 Level 1 都點開看一眼。</p>'+
+    '</div></section>';
+}
+
+function entriesHTML(){
+  var body='';
+  if(S.entry==='lookup'){
+    var q=S.q.trim();
+    var hits=q?EVENTS.filter(function(e){
+      return (e.brand+e.item+e.cat+e.barcode.replace(/ /g,'')).indexOf(q.replace(/ /g,''))>=0}):[];
+    body='<div class="searchbox"><input id="qbox" placeholder="輸入品名、品牌或包裝條碼，例如：鮮乳、清晨牧場、4712" value="'+
+      S.q.replace(/"/g,'&quot;')+'"></div><div class="hits">'+
+      (q ? (hits.length?hits.map(function(e){return '<button class="hit" data-ev="'+e.id+'">'+
+              e.ico+' '+e.brand+' '+e.item+'</button>'}).join('')
+                       :'<span class="note">找不到「'+q+'」。目前生效中的事件共 '+EVENTS.length+
+                        ' 件，試試：鮮乳、海苔、吐司。</span>')
+         : ['鮮乳','海苔','吐司','生菜'].map(function(x){
+             return '<button class="hit" data-q="'+x+'">'+x+'</button>'}).join(''))+
+      '</div>';
+  } else if(S.entry==='browse'){
+    body='<div class="hits">'+['all','乳品','零食','飲料','烘焙','茶飲','生鮮'].map(function(c){
+      var n2=c==='all'?EVENTS.length:EVENTS.filter(function(e){return e.cat===c}).length;
+      return '<button class="hit" data-cat="'+c+'">'+(c==='all'?'全部類別':c)+' '+n2+' 件</button>';
+    }).join('')+'</div>'+
+    '<p class="note">依類別瀏覽服務的是「我家冰箱裡有什麼」這種想法——這是最常見的進入方式。</p>';
+  } else if(S.entry==='explore'){
+    body='<table class="tbl"><tr><th>事件</th><th>品項</th><th>類別</th><th class="n">級別</th>'+
+      '<th class="n">縣市</th><th class="n">批次</th><th class="n">'+S.city+'銷售點</th><th>通報</th></tr>'+
+      EVENTS.slice().sort(function(a,b){return a.lvl-b.lvl}).map(function(e){
+        return '<tr class="click '+(e.lvl===1?'l1':e.lvl===2?'l2':'')+'" data-ev="'+e.id+'">'+
+          '<td><b>'+e.brand+'</b></td><td>'+e.item+'</td><td>'+e.cat+'</td>'+
+          '<td class="n">'+e.lvl+'</td><td class="n">'+e.cities+'</td><td class="n">'+e.batches+'</td>'+
+          '<td class="n">'+(S.city==='all'?'—':spotsIn(e))+'</td><td>'+e.date+'</td></tr>';
+      }).join('')+'</table>';
+  } else {
+    body='<table class="tbl"><tr><th>時間</th><th>動作</th><th>品項</th><th>狀態</th></tr>'+
+      MYLOG.map(function(o){return '<tr><td class="mono">'+o.d+'</td><td>'+o.act+'</td><td>'+o.it+
+        '</td><td'+(o.st!=='—'?' style="color:var(--ok)"':'')+'>'+o.st+'</td></tr>'}).join('')+
+      '</table><p class="note">「我上次查的那個到底是哪一批」也是一種任務。沒有這條路，你只能重查一次。</p>';
+  }
+  function e(k,kk,t,d){
+    return '<button class="entry" data-entry="'+k+'" aria-pressed="'+(S.entry===k)+'">'+
+      '<div class="k">'+kk+'</div><div class="t">'+t+'</div><div class="d">'+d+'</div></button>';
+  }
+  return '<section class="card" data-diag="L8-3 四種任務 → 四條進入路徑">'+
+    '<div class="card-h"><h3>其他查詢方式</h3>'+
+    '<span class="sub">處理完上面那件事之後，這裡才是開放探索（杯碗）</span></div>'+
+    '<div class="card-b"><div class="entries">'+
+      e('lookup','LOOKUP','查品名或條碼','已經知道要查什麼')+
+      e('browse','BROWSE','依食品類別','我家冰箱裡有什麼')+
+      e('explore','EXPLORE','全部事件可排序','想比較全部')+
+      e('locate','LOCATE','我的查詢與退貨紀錄','回頭找看過的')+
+    '</div><div style="margin-top:12px">'+body+'</div></div></section>';
+}
+
+/* ---------- 單一事件 ---------- */
+function eventView(){
+  var e=S.ev, sp=spotsIn(e);
+  var lvlClass=e.lvl===1?'l1':e.lvl===2?'l2':'l3';
+  var alertBox = e.lvl===1
+    ? '<div class="al l2" style="background:var(--l1-bg);border-color:var(--l1-line);color:#8f2018">'+
+      '<span class="lv" style="background:var(--l1)">LEVEL 1</span><span class="tx">'+e.say+'</span>'+
+      '<button class="btn sm" data-ret="'+e.id+'">申請退貨</button></div>'
+    : e.lvl===2
+    ? '<div class="al l2"><span class="lv">LEVEL 2</span><span class="tx">'+e.say+'</span></div>'
+    : '<div class="al l3"><span class="lv">LEVEL 3</span><span class="tx">'+e.say+'</span></div>';
+
+  return '<section class="card"><div class="card-h">'+
+      '<h3>'+e.ico+' '+e.brand+'　'+e.item+'</h3>'+
+      '<span class="sub">'+e.id+' · '+e.cat+' · 版面與總覽相同：警示 → 數字 → 明細</span>'+
+      '<span class="rt"><button class="btn sm" data-go="overview">← 返回全部事件</button></span></div>'+
+    '<div class="card-b" data-diag="L2-3 佈局與總覽一致">'+alertBox+
+      '<div style="display:flex;gap:13px;align-items:flex-start;margin-top:12px" '+
+      'data-diag="L7-1 圖＋文 · L7-3 現場提取線索">'+
+        '<span class="thumb" style="border-color:var(--line)">'+e.ico+
+        (e.lvl===1?'<b>✕</b>':'')+'</span>'+
+        '<div><div style="font-weight:700">家裡怎麼認出來</div>'+
+        '<div style="color:var(--tx2)">'+e.cue+'</div>'+
+        '<div class="note" style="margin-top:3px">包裝條碼 '+e.barcode+'　'+e.lot+'</div></div>'+
+      '</div></div></section>'+
+
+    '<section class="card"><div class="card-h"><h3>這件事的兩組數字</h3>'+
+      '<span class="sub">同一組放同一個容器</span></div>'+
+      '<div class="card-b" data-diag="L6-1 均質連結性 ＝ 分組先於閱讀">'+
+      '<div class="grp" style="margin-bottom:9px"><div class="grp-t">風險</div><div class="grp-row">'+
+        '<div><div class="l">檢出</div><div class="v'+(e.ratio?' red':'')+'" style="font-size:14px">'+
+          e.found+'</div></div>'+
+        '<div><div class="l">標準</div><div class="v" style="font-size:14px">'+e.std+'</div></div>'+
+        (e.ratio?'<div><div class="l">超出倍數</div><div class="v red">'+e.ratio+' 倍</div></div>':'')+
+        '<div><div class="l">你要做的事</div><div class="v" style="font-size:14px">'+e.action+'</div></div>'+
+      '</div></div>'+
+      '<div class="grp"><div class="grp-t">範圍</div><div class="grp-row">'+
+        '<div><div class="l">影響縣市</div><div class="v">'+e.cities+'</div></div>'+
+        '<div><div class="l">批次</div><div class="v">'+e.batches+'</div></div>'+
+        '<div><div class="l">數量</div><div class="v" style="font-size:14px">'+e.units+'</div></div>'+
+        '<div><div class="l">'+S.city+'銷售點</div><div class="v">'+(S.city==='all'?'—':sp)+'</div></div>'+
+      '</div></div>'+
+      '<div class="src" data-diag="L5-1 可驗證來源">來源：'+e.src+' · 檢驗報告 '+e.report+
+        ' · 通路：'+e.channels+'</div>'+
+      '<div style="margin-top:11px;display:flex;gap:8px;flex-wrap:wrap" data-diag="L5-3 主動推論">'+
+        (e.lvl===1?'<button class="btn primary" style="flex:1;min-width:190px" data-ret="'+e.id+
+          '">申請退貨 · 3 步驟</button>':'')+
+        '<button class="btn" data-verify="scan">掃描包裝條碼比對批次</button>'+
+        '<button class="btn" data-verify="rep">查看檢驗報告</button></div>'+
+      '</div></section>'+
+
+    '<section class="card"><div class="card-h"><h3>受影響批次</h3>'+
+      '<span class="sub">點任一列看單一批次</span>'+
+      '<span class="rt">共 '+e.batchList.length+' 批</span></div>'+
+      '<div class="card-b"><table class="tbl">'+
+      '<tr><th>批號</th><th>有效日期</th><th class="n">數量</th><th>你該怎麼做</th></tr>'+
+      e.batchList.map(function(b){
+        return '<tr class="click '+lvlClass+'" data-batch="'+e.id+'|'+b.lot+'">'+
+          '<td class="mono"><b>'+b.lot+'</b></td><td class="mono">'+b.exp+'</td>'+
+          '<td class="n">'+b.n+'</td><td>'+e.action+'</td></tr>';
+      }).join('')+'</table></div></section>';
+}
+
+/* ---------- 單一批次（L8-4 patch 密度） ---------- */
+function batchView(){
+  var e=S.ev, b=S.batch;
+  return '<section class="card"><div class="card-h"><h3>批次 '+b.lot+'</h3>'+
+      '<span class="sub">'+e.brand+' '+e.item+' · 版面與上一層一致</span>'+
+      '<span class="rt"><button class="btn sm" data-go="event">← 返回批次清單</button></span></div>'+
+    '<div class="card-b" data-diag="L8-4 一格內就能做完決策">'+
+      (e.lvl===1?'<div class="al l2" style="background:var(--l1-bg);border-color:var(--l1-line);color:#8f2018">'+
+        '<span class="lv" style="background:var(--l1)">LEVEL 1</span><span class="tx">'+e.say+'</span></div>':'')+
+      '<table class="tbl">'+
+      '<tr><td>批號</td><td class="n mono"><b>'+b.lot+'</b></td></tr>'+
+      '<tr><td>有效日期</td><td class="n mono">'+b.exp+'</td></tr>'+
+      '<tr><td>包裝條碼</td><td class="n mono">'+e.barcode+'</td></tr>'+
+      '<tr><td>數量</td><td class="n">'+b.n+'</td></tr>'+
+      '<tr><td>檢出</td><td class="n" style="color:var(--l1)">'+e.found+'（標準 '+e.std+'）</td></tr>'+
+      '<tr><td>家裡怎麼認</td><td class="n">'+e.cue+'</td></tr>'+
+      '<tr><td>你該怎麼做</td><td class="n"><b>'+e.action+'</b></td></tr>'+
+      '<tr><td>退貨地點</td><td class="n">'+e.channels+' 任一門市</td></tr>'+
+      '<tr><td>檢驗報告</td><td class="n mono">'+e.report+'</td></tr>'+
+      '<tr><td>資料來源</td><td class="n mono">'+e.src+'</td></tr>'+
+      '</table>'+
+      '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+
+        (e.lvl===1?'<button class="btn primary" style="flex:1;min-width:190px" data-ret="'+e.id+
+         '">申請退貨 · 3 步驟</button>':'')+
+        '<button class="btn" data-verify="scan">掃描包裝條碼比對</button>'+
+        '<button class="btn" data-verify="rep">查看檢驗報告</button></div>'+
+    '</div></section>';
+}
+
+/* =====================================================================
+   退貨流程：三步（L10-3）
+   ===================================================================== */
+var RET={step:1, ev:null, lot:null, way:null};
+function openRet(id){
+  RET={step:1, ev:EVENTS.filter(function(e){return e.id===id})[0], lot:null, way:null};
+  RET.lot=RET.ev.batchList[0].lot;
+  $('#mTag').textContent=lvName(RET.ev.lvl)+' · 退貨申請';
+  $('#mTitle').textContent=RET.ev.brand+' '+RET.ev.item;
+  renderRet(); $('#mask').classList.add('on');
+}
+function closeRet(){$('#mask').classList.remove('on')}
+function renderRet(){
+  var b=$('#mBody'), f=$('#mFoot'), e=RET.ev;
+  var st=function(i){return RET.step>i?'done':RET.step===i?'on':''};
+  var steps='<div class="steps"><span class="'+st(1)+'">1 確認批次</span>'+
+    '<span class="'+st(2)+'">2 選退貨方式</span><span class="'+st(3)+'">3 完成</span></div>';
+  if(RET.step===1){
+    b.innerHTML=steps+
+      '<div class="modal-note">依你 9/8 的購買紀錄，最可能是第一批，已幫你選好。'+
+      '不確定就看包裝上的有效日期。</div>'+
+      '<div style="margin-top:11px">'+e.batchList.map(function(x){
+        return '<button class="opt" data-lot="'+x.lot+'" aria-pressed="'+(RET.lot===x.lot)+'">'+
+          '<b>'+x.lot+'　有效日期 '+x.exp+'</b><span>'+x.n+'</span></button>';
+      }).join('')+'</div>';
+    f.innerHTML='<button class="btn" data-m="close">取消</button>'+
+      '<button class="btn primary" data-m="next">下一步</button>';
+  } else if(RET.step===2){
+    b.innerHTML=steps+
+      '<div class="modal-note">兩種都不需要發票，帶包裝即可。</div>'+
+      '<div style="margin-top:11px">'+
+      '<button class="opt" data-way="store" aria-pressed="'+(RET.way==='store')+'">'+
+        '<b>到門市退</b><span>'+e.channels+' 任一門市 · 住家 3 km 內有 2 處 · 當場退款</span></button>'+
+      '<button class="opt" data-way="mail" aria-pressed="'+(RET.way==='mail')+'">'+
+        '<b>宅配到府收</b><span>免運 · 預約後 2 個工作日 · 退款 3–5 日入帳</span></button>'+
+      '</div>';
+    f.innerHTML='<button class="btn" data-m="back">上一步</button>'+
+      '<button class="btn primary" data-m="submit">送出申請</button>';
+  } else {
+    var no='RT-'+(8800+Math.floor(Math.random()*99));
+    b.innerHTML=steps+'<div class="done-ico">✓</div>'+
+      '<p style="text-align:center;margin:0 0 6px"><b>退貨申請已送出</b></p>'+
+      '<p style="text-align:center;margin:0;color:var(--mut);font-size:12.5px">'+
+      e.brand+' '+e.item+' · 批次 '+RET.lot+'　編號 '+no+'</p>'+
+      '<div class="modal-note" style="margin-top:12px">已記入「我的查詢與退貨紀錄」。'+
+      '完成後會回填，用來校準你的通知門檻。</div>';
+    f.innerHTML='<button class="btn primary" style="flex:1" data-m="close">完成</button>';
+    if(!RET.logged){RET.logged=true;
+      MYLOG.unshift({d:'今日 09:1'+Math.floor(Math.random()*9), act:'退貨',
+                     it:e.brand+' '+e.item, st:'處理中 · '+no});}
+  }
+}
+
+/* ===================================================================== */
+function render(){
+  crumb();
+  var v=$('#view');
+  if(S.view==='event') v.innerHTML=eventView();
+  else if(S.view==='batch') v.innerHTML=batchView();
+  else v.innerHTML = stemHTML()+alertsHTML()+kpisHTML()+'<div style="height:14px"></div>'+
+       eventGridHTML()+trendHTML()+heatHTML()+calibHTML()+entriesHTML();
+  window.scrollTo(0,0);
+}
+
+document.addEventListener('click', function(ev){
+  var b=ev.target.closest('button');
+  if(b){
+    if(b.id==='diagBtn'){
+      var on=b.getAttribute('aria-pressed')==='true';
+      b.setAttribute('aria-pressed',String(!on));
+      b.textContent = on ? '顯示診斷標記' : '關閉診斷標記';
+      document.body.classList.toggle('diag',!on); return;
+    }
+    if(b.dataset.go==='overview'){S.view='overview';S.ev=null;S.batch=null;render();return}
+    if(b.dataset.go==='event'){S.view='event';S.batch=null;render();return}
+    if(b.dataset.ev){S.ev=EVENTS.filter(function(e){return e.id===b.dataset.ev})[0];
+      S.view='event';render();return}
+    if(b.dataset.batch){
+      var p=b.dataset.batch.split('|');
+      S.ev=EVENTS.filter(function(e){return e.id===p[0]})[0];
+      S.batch=S.ev.batchList.filter(function(x){return x.lot===p[1]})[0];
+      S.view='batch';render();return;
+    }
+    if(b.dataset.ret){openRet(b.dataset.ret);return}
+    if(b.dataset.lot){RET.lot=b.dataset.lot;renderRet();return}
+    if(b.dataset.way){RET.way=b.dataset.way;renderRet();return}
+    if(b.dataset.verify){
+      alert(b.dataset.verify==='scan'
+        ? '（示範）掃描結果：條碼 '+(S.ev?S.ev.barcode:EVENTS[0].barcode)+
+          '，屬於受影響批次。\n\n這一步存在的理由是 Layer 5：當資料違反你的直覺時，'+
+          '你必須有辦法當場驗證，否則你會選擇懷疑資料、然後忽略它。'
+        : '（示範）檢驗報告：受託單位為虛構之「示範檢驗中心」，'+
+          '檢驗方法 LC-MS/MS，複驗二次結果一致。\n\n報告可下載、可查驗證號——'+
+          '可驗證性降低了「這一定是誤測」的誘因。');
+      return;
+    }
+    if(b.dataset.entry){S.entry=b.dataset.entry;render();return}
+    if(b.dataset.cat){S.cat=b.dataset.cat;$('#fCat').value=S.cat;S.view='overview';render();return}
+    if(b.dataset.q!==undefined){S.q=b.dataset.q;S.entry='lookup';render();return}
+    if(b.dataset.m){
+      var a=b.dataset.m;
+      if(a==='close') closeRet();
+      else if(a==='next'){RET.step=2;renderRet()}
+      else if(a==='back'){RET.step=1;renderRet()}
+      else if(a==='submit'){
+        if(!RET.way){RET.way='store'}
+        RET.step=3;renderRet();
+      }
+      return;
+    }
+  }
+  var tr=ev.target.closest('tr.click');
+  if(tr){
+    if(tr.dataset.ev){S.ev=EVENTS.filter(function(e){return e.id===tr.dataset.ev})[0];
+      S.view='event';render()}
+    else if(tr.dataset.batch){
+      var q=tr.dataset.batch.split('|');
+      S.ev=EVENTS.filter(function(e){return e.id===q[0]})[0];
+      S.batch=S.ev.batchList.filter(function(x){return x.lot===q[1]})[0];
+      S.view='batch';render();
+    }
+  }
+});
+
+document.addEventListener('input', function(ev){
+  if(ev.target.id==='qbox'){
+    S.q=ev.target.value;
+    var pos=ev.target.selectionStart; render();
+    var nb=$('#qbox'); if(nb){nb.focus();nb.setSelectionRange(pos,pos)}
+  }
+});
+
+document.addEventListener('change', function(ev){
+  var id=ev.target.id;
+  if(id==='fCity'){S.city=ev.target.value;S.view='overview';S.ev=null;S.batch=null}
+  else if(id==='fCat'){S.cat=ev.target.value;S.view='overview';S.ev=null;S.batch=null}
+  else if(id==='fPeriod'){S.period=ev.target.value}
+  else return;
+  render();
+});
+
+$('#mask').addEventListener('click', function(ev){if(ev.target===this) closeRet()});
+document.addEventListener('keydown', function(ev){if(ev.key==='Escape') closeRet()});
+
+render();
+</script>
+</body>
+</html>
